@@ -15,10 +15,7 @@ impl KeyExchange {
         name: NamedGroup,
         supported: &[&'static SupportedKxGroup],
     ) -> Option<&'static SupportedKxGroup> {
-        supported
-            .iter()
-            .find(|skxg| skxg.name == name)
-            .cloned()
+        supported.iter().find(|skxg| skxg.name == name).cloned()
     }
 
     /// Start a key exchange, using the given SupportedKxGroup.
@@ -31,11 +28,7 @@ impl KeyExchange {
 
         let pubkey = ours.compute_public_key().ok()?;
 
-        Some(Self {
-            skxg,
-            privkey: ours,
-            pubkey,
-        })
+        Some(Self { skxg, privkey: ours, pubkey })
     }
 
     /// Return the group being used.
@@ -72,10 +65,8 @@ pub struct SupportedKxGroup {
 }
 
 /// Ephemeral ECDH on curve25519 (see RFC7748)
-pub static X25519: SupportedKxGroup = SupportedKxGroup {
-    name: NamedGroup::X25519,
-    agreement_algorithm: &ring::agreement::X25519,
-};
+pub static X25519: SupportedKxGroup =
+    SupportedKxGroup { name: NamedGroup::X25519, agreement_algorithm: &ring::agreement::X25519 };
 
 /// Ephemeral ECDH on secp256r1 (aka NIST-P256)
 pub static SECP256R1: SupportedKxGroup = SupportedKxGroup {

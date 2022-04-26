@@ -73,10 +73,7 @@ fn test_gigantic() {
     let mut val = Vec::new();
     val.resize(0x100000, 0x12);
     wrap_in_sequence(&mut val);
-    assert_eq!(
-        vec![0x30, 0x83, 0x10, 0x00, 0x00, 0x12, 0x12],
-        val[..7].to_vec()
-    );
+    assert_eq!(vec![0x30, 0x83, 0x10, 0x00, 0x00, 0x12, 0x12], val[..7].to_vec());
     assert_eq!(val.len(), 0x100000 + 5);
 }
 
@@ -85,9 +82,6 @@ fn test_ludicrous() {
     let mut val = Vec::new();
     val.resize(0x1000000, 0x12);
     wrap_in_sequence(&mut val);
-    assert_eq!(
-        vec![0x30, 0x84, 0x01, 0x00, 0x00, 0x00, 0x12, 0x12],
-        val[..8].to_vec()
-    );
+    assert_eq!(vec![0x30, 0x84, 0x01, 0x00, 0x00, 0x00, 0x12, 0x12], val[..8].to_vec());
     assert_eq!(val.len(), 0x1000000 + 6);
 }

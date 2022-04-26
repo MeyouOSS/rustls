@@ -14,10 +14,7 @@ pub(crate) struct ChunkVecBuffer {
 
 impl ChunkVecBuffer {
     pub(crate) fn new(limit: Option<usize>) -> Self {
-        Self {
-            chunks: VecDeque::new(),
-            limit,
-        }
+        Self { chunks: VecDeque::new(), limit }
     }
 
     /// Sets the upper limit on how many bytes this
@@ -88,9 +85,7 @@ impl ChunkVecBuffer {
         let mut offs = 0;
 
         while offs < buf.len() && !self.is_empty() {
-            let used = self.chunks[0]
-                .as_slice()
-                .read(&mut buf[offs..])?;
+            let used = self.chunks[0].as_slice().read(&mut buf[offs..])?;
 
             self.consume(used);
             offs += used;
@@ -115,8 +110,7 @@ impl ChunkVecBuffer {
     fn consume(&mut self, mut used: usize) {
         while let Some(mut buf) = self.chunks.pop_front() {
             if used < buf.len() {
-                self.chunks
-                    .push_front(buf.split_off(used));
+                self.chunks.push_front(buf.split_off(used));
                 break;
             } else {
                 used -= buf.len();

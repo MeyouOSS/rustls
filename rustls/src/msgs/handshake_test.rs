@@ -184,10 +184,7 @@ fn can_roundtrip_multiname_sni() {
 
             assert!(req.has_duplicate_names_for_type());
 
-            let dns_name_str: &str = req
-                .get_single_hostname()
-                .unwrap()
-                .into();
+            let dns_name_str: &str = req.get_single_hostname().unwrap().into();
             assert_eq!(dns_name_str, "hi");
 
             assert_eq!(req[0].typ, ServerNameType::HostName);
@@ -239,9 +236,7 @@ fn can_roundtrip_psk_identity() {
 
 #[test]
 fn can_roundtrip_psk_offer() {
-    let bytes = [
-        0, 7, 0, 1, 0x99, 0x11, 0x22, 0x33, 0x44, 0, 4, 3, 0x01, 0x02, 0x3,
-    ];
+    let bytes = [0, 7, 0, 1, 0x99, 0x11, 0x22, 0x33, 0x44, 0, 4, 3, 0x01, 0x02, 0x3];
     let psko = PresharedKeyOffer::read(&mut Reader::init(&bytes)).unwrap();
     println!("{:?}", psko);
 
@@ -492,10 +487,8 @@ fn test_client_extension_getter(typ: ExtensionType, getter: fn(&ClientHelloPaylo
     chp.extensions = vec![ext];
     assert!(getter(&chp));
 
-    chp.extensions = vec![ClientExtension::Unknown(UnknownExtension {
-        typ,
-        payload: Payload(vec![]),
-    })];
+    chp.extensions =
+        vec![ClientExtension::Unknown(UnknownExtension { typ, payload: Payload(vec![]) })];
     assert!(!getter(&chp));
 }
 
@@ -516,8 +509,7 @@ fn client_get_sigalgs_extension() {
 #[test]
 fn client_get_namedgroups_extension() {
     test_client_extension_getter(ExtensionType::EllipticCurves, |chp| {
-        chp.get_namedgroups_extension()
-            .is_some()
+        chp.get_namedgroups_extension().is_some()
     });
 }
 
@@ -538,8 +530,7 @@ fn client_get_alpn_extension() {
 #[test]
 fn client_get_quic_params_extension() {
     test_client_extension_getter(ExtensionType::TransportParameters, |chp| {
-        chp.get_quic_params_extension()
-            .is_some()
+        chp.get_quic_params_extension().is_some()
     });
 }
 
@@ -608,18 +599,15 @@ fn test_helloretry_extension_getter(typ: ExtensionType, getter: fn(&HelloRetryRe
     hrr.extensions = exts;
     assert!(getter(&hrr));
 
-    hrr.extensions = vec![HelloRetryExtension::Unknown(UnknownExtension {
-        typ,
-        payload: Payload(vec![]),
-    })];
+    hrr.extensions =
+        vec![HelloRetryExtension::Unknown(UnknownExtension { typ, payload: Payload(vec![]) })];
     assert!(!getter(&hrr));
 }
 
 #[test]
 fn helloretry_get_requested_key_share_group() {
     test_helloretry_extension_getter(ExtensionType::KeyShare, |hrr| {
-        hrr.get_requested_key_share_group()
-            .is_some()
+        hrr.get_requested_key_share_group().is_some()
     });
 }
 
@@ -677,10 +665,8 @@ fn test_server_extension_getter(typ: ExtensionType, getter: fn(&ServerHelloPaylo
     shp.extensions = vec![ext];
     assert!(getter(&shp));
 
-    shp.extensions = vec![ServerExtension::Unknown(UnknownExtension {
-        typ,
-        payload: Payload(vec![]),
-    })];
+    shp.extensions =
+        vec![ServerExtension::Unknown(UnknownExtension { typ, payload: Payload(vec![]) })];
     assert!(!getter(&shp));
 }
 
@@ -691,9 +677,7 @@ fn server_get_key_share() {
 
 #[test]
 fn server_get_psk_index() {
-    test_server_extension_getter(ExtensionType::PreSharedKey, |shp| {
-        shp.get_psk_index().is_some()
-    });
+    test_server_extension_getter(ExtensionType::PreSharedKey, |shp| shp.get_psk_index().is_some());
 }
 
 #[test]
@@ -716,9 +700,7 @@ fn server_get_supported_versions() {
 }
 
 fn test_cert_extension_getter(typ: ExtensionType, getter: fn(&CertificateEntry) -> bool) {
-    let mut ce = get_sample_certificatepayloadtls13()
-        .entries
-        .remove(0);
+    let mut ce = get_sample_certificatepayloadtls13().entries.remove(0);
     let mut exts = std::mem::take(&mut ce.exts);
     exts.retain(|ext| ext.get_type() == typ);
 
@@ -727,18 +709,14 @@ fn test_cert_extension_getter(typ: ExtensionType, getter: fn(&CertificateEntry) 
     ce.exts = exts;
     assert!(getter(&ce));
 
-    ce.exts = vec![CertificateExtension::Unknown(UnknownExtension {
-        typ,
-        payload: Payload(vec![]),
-    })];
+    ce.exts =
+        vec![CertificateExtension::Unknown(UnknownExtension { typ, payload: Payload(vec![]) })];
     assert!(!getter(&ce));
 }
 
 #[test]
 fn certentry_get_ocsp_response() {
-    test_cert_extension_getter(ExtensionType::StatusRequest, |ce| {
-        ce.get_ocsp_response().is_some()
-    });
+    test_cert_extension_getter(ExtensionType::StatusRequest, |ce| ce.get_ocsp_response().is_some());
 }
 
 #[test]
@@ -863,10 +841,7 @@ fn get_sample_certificaterequestpayloadtls13() -> CertificateRequestPayloadTLS13
 }
 
 fn get_sample_newsessionticketpayload() -> NewSessionTicketPayload {
-    NewSessionTicketPayload {
-        lifetime_hint: 1234,
-        ticket: PayloadU16(vec![1, 2, 3]),
-    }
+    NewSessionTicketPayload { lifetime_hint: 1234, ticket: PayloadU16(vec![1, 2, 3]) }
 }
 
 fn get_sample_newsessionticketpayloadtls13() -> NewSessionTicketPayloadTLS13 {
@@ -887,9 +862,7 @@ fn get_sample_encryptedextensions() -> EncryptedExtensions {
 }
 
 fn get_sample_certificatestatus() -> CertificateStatus {
-    CertificateStatus {
-        ocsp_response: PayloadU24(vec![1, 2, 3]),
-    }
+    CertificateStatus { ocsp_response: PayloadU24(vec![1, 2, 3]) }
 }
 
 fn get_all_tls12_handshake_payloads() -> Vec<HandshakeMessagePayload> {

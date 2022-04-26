@@ -44,10 +44,7 @@ enum BufferState {
 impl HandshakeJoiner {
     /// Make a new HandshakeJoiner.
     pub fn new() -> Self {
-        Self {
-            frames: VecDeque::new(),
-            buf: Vec::new(),
-        }
+        Self { frames: VecDeque::new(), buf: Vec::new() }
     }
 
     /// Do we want to process this message?
@@ -74,8 +71,7 @@ impl HandshakeJoiner {
         if self.buf.is_empty() {
             self.buf = msg.payload.0;
         } else {
-            self.buf
-                .extend_from_slice(&msg.payload.0[..]);
+            self.buf.extend_from_slice(&msg.payload.0[..]);
         }
 
         let mut count = 0;
@@ -124,10 +120,7 @@ impl HandshakeJoiner {
                 None => return false,
             };
 
-            let m = Message {
-                version,
-                payload: MessagePayload::Handshake(payload),
-            };
+            let m = Message { version, payload: MessagePayload::Handshake(payload) };
 
             self.frames.push_back(m);
             rd.used()

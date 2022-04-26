@@ -160,16 +160,12 @@ where
             let message = OpaqueMessage::read(&mut reader).unwrap();
             let mut message = Message::try_from(message.into_plain_message()).unwrap();
             let message_enc = match filter(&mut message) {
-                Altered::InPlace => PlainMessage::from(message)
-                    .into_unencrypted_opaque()
-                    .encode(),
+                Altered::InPlace => PlainMessage::from(message).into_unencrypted_opaque().encode(),
                 Altered::Raw(data) => data,
             };
 
             let message_enc_reader: &mut dyn io::Read = &mut &message_enc[..];
-            let len = right
-                .read_tls(message_enc_reader)
-                .unwrap();
+            let len = right.read_tls(message_enc_reader).unwrap();
             assert_eq!(len, message_enc.len());
         }
     }
@@ -234,9 +230,7 @@ pub fn finish_server_config(
     kt: KeyType,
     conf: rustls::ConfigBuilder<ServerConfig, rustls::WantsVerifier>,
 ) -> ServerConfig {
-    conf.with_no_client_auth()
-        .with_single_cert(kt.get_chain(), kt.get_key())
-        .unwrap()
+    conf.with_no_client_auth().with_single_cert(kt.get_chain(), kt.get_key()).unwrap()
 }
 
 pub fn make_server_config(kt: KeyType) -> ServerConfig {
@@ -300,9 +294,7 @@ pub fn finish_client_config(
     let mut rootbuf = io::BufReader::new(kt.bytes_for("ca.cert"));
     root_store.add_parsable_certificates(&rustls_pemfile::certs(&mut rootbuf).unwrap());
 
-    config
-        .with_root_certificates(root_store)
-        .with_no_client_auth()
+    config.with_root_certificates(root_store).with_no_client_auth()
 }
 
 pub fn finish_client_config_with_creds(
@@ -410,13 +402,9 @@ pub fn do_handshake_until_error(
 ) -> Result<(), ErrorFromPeer> {
     while server.is_handshaking() || client.is_handshaking() {
         transfer(client, server);
-        server
-            .process_new_packets()
-            .map_err(ErrorFromPeer::Server)?;
+        server.process_new_packets().map_err(ErrorFromPeer::Server)?;
         transfer(server, client);
-        client
-            .process_new_packets()
-            .map_err(ErrorFromPeer::Client)?;
+        client.process_new_packets().map_err(ErrorFromPeer::Client)?;
     }
 
     Ok(())

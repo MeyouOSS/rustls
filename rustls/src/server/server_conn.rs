@@ -128,21 +128,14 @@ impl<'a> ClientHello<'a> {
         trace!("alpn protocols {:?}", alpn);
         trace!("cipher suites {:?}", cipher_suites);
 
-        ClientHello {
-            server_name,
-            signature_schemes,
-            alpn,
-            cipher_suites,
-        }
+        ClientHello { server_name, signature_schemes, alpn, cipher_suites }
     }
 
     /// Get the server name indicator.
     ///
     /// Returns `None` if the client did not supply a SNI.
     pub fn server_name(&self) -> Option<&str> {
-        self.server_name
-            .as_ref()
-            .map(<webpki::DnsName as AsRef<str>>::as_ref)
+        self.server_name.as_ref().map(<webpki::DnsName as AsRef<str>>::as_ref)
     }
 
     /// Get the compatible signature schemes.
@@ -156,11 +149,7 @@ impl<'a> ClientHello<'a> {
     ///
     /// Returns `None` if the client did not include an ALPN extension
     pub fn alpn(&self) -> Option<impl Iterator<Item = &'a [u8]>> {
-        self.alpn.map(|protocols| {
-            protocols
-                .iter()
-                .map(|proto| proto.0.as_slice())
-        })
+        self.alpn.map(|protocols| protocols.iter().map(|proto| proto.0.as_slice()))
     }
 
     /// Get cipher suites.
@@ -271,10 +260,7 @@ impl ServerConfig {
     ///
     /// For more information, see the [`ConfigBuilder`] documentation.
     pub fn builder() -> ConfigBuilder<Self, WantsCipherSuites> {
-        ConfigBuilder {
-            state: WantsCipherSuites(()),
-            side: PhantomData::default(),
-        }
+        ConfigBuilder { state: WantsCipherSuites(()), side: PhantomData::default() }
     }
 
     #[doc(hidden)]
@@ -282,11 +268,7 @@ impl ServerConfig {
     /// versions *and* at least one ciphersuite for this version is
     /// also configured.
     pub fn supports_version(&self, v: ProtocolVersion) -> bool {
-        self.versions.contains(v)
-            && self
-                .cipher_suites
-                .iter()
-                .any(|cs| cs.version().version == v)
+        self.versions.contains(v) && self.cipher_suites.iter().any(|cs| cs.version().version == v)
     }
 }
 
@@ -371,11 +353,7 @@ impl ServerConnection {
     ///
     /// Returns `Some` iff a valid resumption ticket has been received from the client.
     pub fn received_resumption_data(&self) -> Option<&[u8]> {
-        self.inner
-            .data
-            .received_resumption_data
-            .as_ref()
-            .map(|x| &x[..])
+        self.inner.data.received_resumption_data.as_ref().map(|x| &x[..])
     }
 
     /// Set the resumption data to embed in future resumption tickets supplied to the client.
@@ -397,10 +375,7 @@ impl ServerConnection {
     ///
     /// Must be called while `is_handshaking` is true.
     pub fn reject_early_data(&mut self) {
-        assert!(
-            self.is_handshaking(),
-            "cannot retroactively reject early data"
-        );
+        assert!(self.is_handshaking(), "cannot retroactively reject early data");
         self.inner.data.early_data.reject();
     }
 
@@ -415,12 +390,7 @@ impl ServerConnection {
     /// - The connection doesn't resume an existing session.
     /// - The client hasn't sent a full ClientHello yet.
     pub fn early_data(&mut self) -> Option<ReadEarlyData> {
-        if self
-            .inner
-            .data
-            .early_data
-            .was_accepted()
-        {
+        if self.inner.data.early_data.was_accepted() {
             Some(ReadEarlyData::new(&mut self.inner.data.early_data))
         } else {
             None
@@ -430,8 +400,7 @@ impl ServerConnection {
 
 impl fmt::Debug for ServerConnection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("ServerConnection")
-            .finish()
+        f.debug_struct("ServerConnection").finish()
     }
 }
 
@@ -468,9 +437,7 @@ impl Acceptor {
     pub fn new() -> Result<Self, Error> {
         let common = CommonState::new(None, Side::Server)?;
         let state = Box::new(Accepting);
-        Ok(Self {
-            inner: Some(ConnectionCommon::new(state, Default::default(), common)),
-        })
+        Ok(Self { inner: Some(ConnectionCommon::new(state, Default::default(), common)) })
     }
 
     /// Returns true if the caller should call [`Connection::read_tls()`] as soon as possible.
@@ -479,10 +446,7 @@ impl Acceptor {
     ///
     /// [`Connection::read_tls()`]: crate::Connection::read_tls
     pub fn wants_read(&self) -> bool {
-        self.inner
-            .as_ref()
-            .map(|conn| conn.common_state.wants_read())
-            .unwrap_or(false)
+        self.inner.as_ref().map(|conn| conn.common_state.wants_read()).unwrap_or(false)
     }
 
     /// Read TLS content from `rd`.
@@ -510,9 +474,7 @@ impl Acceptor {
         let mut connection = match self.inner.take() {
             Some(conn) => conn,
             None => {
-                return Err(Error::General(
-                    "cannot accept after successful acceptance".into(),
-                ));
+                return Err(Error::General("cannot accept after successful acceptance".into()));
             }
         };
 
@@ -540,11 +502,7 @@ impl Acceptor {
             &mut connection.data,
         )?;
 
-        Ok(Some(Accepted {
-            connection,
-            message,
-            sig_schemes,
-        }))
+        Ok(Some(Accepted { connection, message, sig_schemes }))
     }
 }
 
@@ -575,9 +533,7 @@ impl Accepted {
     /// [`sign::CertifiedKey`] that should be used for the session. Returns an error if
     /// configuration-dependent validation of the received `ClientHello` message fails.
     pub fn into_connection(mut self, config: Arc<ServerConfig>) -> Result<ServerConnection, Error> {
-        self.connection
-            .common_state
-            .set_max_fragment_size(config.max_fragment_size)?;
+        self.connection.common_state.set_max_fragment_size(config.max_fragment_size)?;
         let state = hs::ExpectClientHello::new(config, Vec::new());
         let mut cx = hs::ServerContext {
             common: &mut self.connection.common_state,
@@ -592,9 +548,7 @@ impl Accepted {
         )?;
 
         self.connection.replace_state(new);
-        Ok(ServerConnection {
-            inner: self.connection,
-        })
+        Ok(ServerConnection { inner: self.connection })
     }
 
     fn client_hello_payload(message: &Message) -> &ClientHelloPayload {
@@ -689,10 +643,7 @@ fn test_read_in_new_state() {
 #[test]
 fn test_read_buf_in_new_state() {
     assert_eq!(
-        format!(
-            "{:?}",
-            EarlyDataState::default().read_buf(&mut io::ReadBuf::new(&mut [0u8; 5]))
-        ),
+        format!("{:?}", EarlyDataState::default().read_buf(&mut io::ReadBuf::new(&mut [0u8; 5]))),
         "Err(Kind(BrokenPipe))"
     );
 }
@@ -717,25 +668,13 @@ impl crate::conn::SideData for ServerConnectionData {}
 #[cfg(feature = "quic")]
 impl quic::QuicExt for ServerConnection {
     fn quic_transport_parameters(&self) -> Option<&[u8]> {
-        self.inner
-            .common_state
-            .quic
-            .params
-            .as_ref()
-            .map(|v| v.as_ref())
+        self.inner.common_state.quic.params.as_ref().map(|v| v.as_ref())
     }
 
     fn zero_rtt_keys(&self) -> Option<quic::DirectionalKeys> {
         Some(quic::DirectionalKeys::new(
-            self.inner
-                .common_state
-                .suite
-                .and_then(|suite| suite.tls13())?,
-            self.inner
-                .common_state
-                .quic
-                .early_secret
-                .as_ref()?,
+            self.inner.common_state.suite.and_then(|suite| suite.tls13())?,
+            self.inner.common_state.quic.early_secret.as_ref()?,
         ))
     }
 
@@ -764,9 +703,7 @@ pub trait ServerQuicExt {
         params: Vec<u8>,
     ) -> Result<ServerConnection, Error> {
         if !config.supports_version(ProtocolVersion::TLSv1_3) {
-            return Err(Error::General(
-                "TLS 1.3 support is required for QUIC".into(),
-            ));
+            return Err(Error::General("TLS 1.3 support is required for QUIC".into()));
         }
 
         if config.max_early_data_size != 0 && config.max_early_data_size != 0xffff_ffff {

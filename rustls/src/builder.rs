@@ -103,10 +103,7 @@ impl<Side: ConfigSide, State> fmt::Debug for ConfigBuilder<Side, State> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ConfigBuilder")
             .field("side", &format_args!("{}", &std::any::type_name::<Side>()))
-            .field(
-                "state",
-                &format_args!("{}", &std::any::type_name::<State>()),
-            )
+            .field("state", &format_args!("{}", &std::any::type_name::<State>()))
             .finish()
     }
 }
@@ -144,9 +141,7 @@ impl<S: ConfigSide> ConfigBuilder<S, WantsCipherSuites> {
         cipher_suites: &[SupportedCipherSuite],
     ) -> ConfigBuilder<S, WantsKxGroups> {
         ConfigBuilder {
-            state: WantsKxGroups {
-                cipher_suites: cipher_suites.to_vec(),
-            },
+            state: WantsKxGroups { cipher_suites: cipher_suites.to_vec() },
             side: self.side,
         }
     }

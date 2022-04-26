@@ -105,10 +105,9 @@ impl SupportedCipherSuite {
         match self {
             SupportedCipherSuite::Tls13(_) => true, // no constraint expressed by ciphersuite (e.g., TLS1.3)
             #[cfg(feature = "tls12")]
-            SupportedCipherSuite::Tls12(inner) => inner
-                .sign
-                .iter()
-                .any(|scheme| scheme.sign() == _sig_alg),
+            SupportedCipherSuite::Tls12(inner) => {
+                inner.sign.iter().any(|scheme| scheme.sign() == _sig_alg)
+            }
         }
     }
 }
@@ -146,10 +145,7 @@ pub(crate) fn choose_ciphersuite_preferring_client(
     server_suites: &[SupportedCipherSuite],
 ) -> Option<SupportedCipherSuite> {
     for client_suite in client_suites {
-        if let Some(selected) = server_suites
-            .iter()
-            .find(|x| *client_suite == x.suite())
-        {
+        if let Some(selected) = server_suites.iter().find(|x| *client_suite == x.suite()) {
             return Some(*selected);
         }
     }
@@ -161,10 +157,7 @@ pub(crate) fn choose_ciphersuite_preferring_server(
     client_suites: &[CipherSuite],
     server_suites: &[SupportedCipherSuite],
 ) -> Option<SupportedCipherSuite> {
-    if let Some(selected) = server_suites
-        .iter()
-        .find(|x| client_suites.contains(&x.suite()))
-    {
+    if let Some(selected) = server_suites.iter().find(|x| client_suites.contains(&x.suite())) {
         return Some(*selected);
     }
 
@@ -177,10 +170,7 @@ pub(crate) fn reduce_given_sigalg(
     all: &[SupportedCipherSuite],
     sigalg: SignatureAlgorithm,
 ) -> Vec<SupportedCipherSuite> {
-    all.iter()
-        .filter(|&&suite| suite.usable_for_signature_algorithm(sigalg))
-        .copied()
-        .collect()
+    all.iter().filter(|&&suite| suite.usable_for_signature_algorithm(sigalg)).copied().collect()
 }
 
 /// Return a list of the ciphersuites in `all` with the suites
@@ -189,10 +179,7 @@ pub(crate) fn reduce_given_version(
     all: &[SupportedCipherSuite],
     version: ProtocolVersion,
 ) -> Vec<SupportedCipherSuite> {
-    all.iter()
-        .filter(|&&suite| suite.version().version == version)
-        .copied()
-        .collect()
+    all.iter().filter(|&&suite| suite.version().version == version).copied().collect()
 }
 
 /// Return true if `sigscheme` is usable by any of the given suites.
@@ -201,9 +188,7 @@ pub(crate) fn compatible_sigscheme_for_suites(
     common_suites: &[SupportedCipherSuite],
 ) -> bool {
     let sigalg = sigscheme.sign();
-    common_suites
-        .iter()
-        .any(|&suite| suite.usable_for_signature_algorithm(sigalg))
+    common_suites.iter().any(|&suite| suite.usable_for_signature_algorithm(sigalg))
 }
 
 #[cfg(test)]
@@ -213,10 +198,8 @@ mod test {
 
     #[test]
     fn test_client_pref() {
-        let client = vec![
-            CipherSuite::TLS13_AES_128_GCM_SHA256,
-            CipherSuite::TLS13_AES_256_GCM_SHA384,
-        ];
+        let client =
+            vec![CipherSuite::TLS13_AES_128_GCM_SHA256, CipherSuite::TLS13_AES_256_GCM_SHA384];
         let server = vec![TLS13_AES_256_GCM_SHA384, TLS13_AES_128_GCM_SHA256];
         let chosen = choose_ciphersuite_preferring_client(&client, &server);
         assert!(chosen.is_some());
@@ -225,10 +208,8 @@ mod test {
 
     #[test]
     fn test_server_pref() {
-        let client = vec![
-            CipherSuite::TLS13_AES_128_GCM_SHA256,
-            CipherSuite::TLS13_AES_256_GCM_SHA384,
-        ];
+        let client =
+            vec![CipherSuite::TLS13_AES_128_GCM_SHA256, CipherSuite::TLS13_AES_256_GCM_SHA384];
         let server = vec![TLS13_AES_256_GCM_SHA384, TLS13_AES_128_GCM_SHA256];
         let chosen = choose_ciphersuite_preferring_server(&client, &server);
         assert!(chosen.is_some());

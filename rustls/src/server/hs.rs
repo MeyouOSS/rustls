@@ -91,10 +91,7 @@ impl ExtensionProcessing {
         if let Some(their_protocols) = maybe_their_protocols {
             let their_protocols = their_protocols.to_slices();
 
-            if their_protocols
-                .iter()
-                .any(|protocol| protocol.is_empty())
-            {
+            if their_protocols.iter().any(|protocol| protocol.is_empty()) {
                 return Err(Error::PeerMisbehavedError(
                     "client offered empty ALPN protocol".to_string(),
                 ));
@@ -106,11 +103,9 @@ impl ExtensionProcessing {
                 .cloned();
             if let Some(ref selected_protocol) = cx.common.alpn_protocol {
                 debug!("Chosen ALPN protocol {:?}", selected_protocol);
-                self.exts
-                    .push(ServerExtension::make_alpn(&[selected_protocol]));
+                self.exts.push(ServerExtension::make_alpn(&[selected_protocol]));
             } else if !our_protocols.is_empty() {
-                cx.common
-                    .send_fatal_alert(AlertDescription::NoApplicationProtocol);
+                cx.common.send_fatal_alert(AlertDescription::NoApplicationProtocol);
                 return Err(Error::NoApplicationProtocol);
             }
         }
@@ -128,8 +123,7 @@ impl ExtensionProcessing {
                 if cx.common.alpn_protocol.is_none()
                     && (!our_protocols.is_empty() || maybe_their_protocols.is_some())
                 {
-                    cx.common
-                        .send_fatal_alert(AlertDescription::NoApplicationProtocol);
+                    cx.common.send_fatal_alert(AlertDescription::NoApplicationProtocol);
                     return Err(Error::NoApplicationProtocol);
                 }
 
@@ -147,39 +141,28 @@ impl ExtensionProcessing {
         let for_resume = resumedata.is_some();
         // SNI
         if !for_resume && hello.get_sni_extension().is_some() {
-            self.exts
-                .push(ServerExtension::ServerNameAck);
+            self.exts.push(ServerExtension::ServerNameAck);
         }
 
         // Send status_request response if we have one.  This is not allowed
         // if we're resuming, and is only triggered if we have an OCSP response
         // to send.
-        if !for_resume
-            && hello
-                .find_extension(ExtensionType::StatusRequest)
-                .is_some()
-        {
+        if !for_resume && hello.find_extension(ExtensionType::StatusRequest).is_some() {
             if ocsp_response.is_some() && !cx.common.is_tls13() {
                 // Only TLS1.2 sends confirmation in ServerHello
-                self.exts
-                    .push(ServerExtension::CertificateStatusAck);
+                self.exts.push(ServerExtension::CertificateStatusAck);
             }
         } else {
             // Throw away any OCSP response so we don't try to send it later.
             ocsp_response.take();
         }
 
-        if !for_resume
-            && hello
-                .find_extension(ExtensionType::SCT)
-                .is_some()
-        {
+        if !for_resume && hello.find_extension(ExtensionType::SCT).is_some() {
             if !cx.common.is_tls13() {
                 // Take the SCT list, if any, so we don't send it later,
                 // and put it in the legacy extension.
                 if let Some(sct_list) = sct_list.take() {
-                    self.exts
-                        .push(ServerExtension::make_sct(sct_list.to_vec()));
+                    self.exts.push(ServerExtension::make_sct(sct_list.to_vec()));
                 }
             }
         } else {
@@ -201,35 +184,25 @@ impl ExtensionProcessing {
     ) {
         // Renegotiation.
         // (We don't do reneg at all, but would support the secure version if we did.)
-        let secure_reneg_offered = hello
-            .find_extension(ExtensionType::RenegotiationInfo)
-            .is_some()
-            || hello
-                .cipher_suites
-                .contains(&CipherSuite::TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
+        let secure_reneg_offered = hello.find_extension(ExtensionType::RenegotiationInfo).is_some()
+            || hello.cipher_suites.contains(&CipherSuite::TLS_EMPTY_RENEGOTIATION_INFO_SCSV);
 
         if secure_reneg_offered {
-            self.exts
-                .push(ServerExtension::make_empty_renegotiation_info());
+            self.exts.push(ServerExtension::make_empty_renegotiation_info());
         }
 
         // Tickets:
         // If we get any SessionTicket extension and have tickets enabled,
         // we send an ack.
-        if hello
-            .find_extension(ExtensionType::SessionTicket)
-            .is_some()
-            && config.ticketer.enabled()
+        if hello.find_extension(ExtensionType::SessionTicket).is_some() && config.ticketer.enabled()
         {
             self.send_ticket = true;
-            self.exts
-                .push(ServerExtension::SessionTicketAck);
+            self.exts.push(ServerExtension::SessionTicketAck);
         }
 
         // Confirm use of EMS if offered.
         if using_ems {
-            self.exts
-                .push(ServerExtension::ExtendedMasterSecretAck);
+            self.exts.push(ServerExtension::ExtendedMasterSecretAck);
         }
     }
 }
@@ -275,12 +248,8 @@ impl ExpectClientHello {
         m: &Message,
         cx: &mut ServerContext<'_>,
     ) -> NextStateOrError {
-        let tls13_enabled = self
-            .config
-            .supports_version(ProtocolVersion::TLSv1_3);
-        let tls12_enabled = self
-            .config
-            .supports_version(ProtocolVersion::TLSv1_2);
+        let tls13_enabled = self.config.supports_version(ProtocolVersion::TLSv1_3);
+        let tls12_enabled = self.config.supports_version(ProtocolVersion::TLSv1_2);
 
         // Are we doing TLS1.3?
         let maybe_versions_ext = client_hello.get_versions_extension();
@@ -324,14 +293,10 @@ impl ExpectClientHello {
                 &client_hello.cipher_suites,
             );
 
-            let certkey = self
-                .config
-                .cert_resolver
-                .resolve(client_hello);
+            let certkey = self.config.cert_resolver.resolve(client_hello);
 
             certkey.ok_or_else(|| {
-                cx.common
-                    .send_fatal_alert(AlertDescription::AccessDenied);
+                cx.common.send_fatal_alert(AlertDescription::AccessDenied);
                 Error::General("no server certificate chain resolved".to_string())
             })?
         };
@@ -367,9 +332,7 @@ impl ExpectClientHello {
             HandshakeHashOrBuffer::Buffer(inner) => inner.start_hash(starting_hash),
             HandshakeHashOrBuffer::Hash(inner) if inner.algorithm() == starting_hash => inner,
             _ => {
-                return Err(cx
-                    .common
-                    .illegal_param("hash differed on retry"));
+                return Err(cx.common.illegal_param("hash differed on retry"));
             }
         };
 
@@ -440,10 +403,7 @@ pub(super) fn process_client_hello<'a>(
         require_handshake_msg!(m, HandshakeType::ClientHello, HandshakePayload::ClientHello)?;
     trace!("we got a clienthello {:?}", client_hello);
 
-    if !client_hello
-        .compression_methods
-        .contains(&Compression::Null)
-    {
+    if !client_hello.compression_methods.contains(&Compression::Null) {
         common.send_fatal_alert(AlertDescription::IllegalParameter);
         return Err(Error::PeerIncompatibleError(
             "client did not offer Null compression".to_string(),
@@ -465,10 +425,7 @@ pub(super) fn process_client_hello<'a>(
     let sni: Option<webpki::DnsName> = match client_hello.get_sni_extension() {
         Some(sni) => {
             if sni.has_duplicate_names_for_type() {
-                return Err(decode_error(
-                    common,
-                    "ClientHello SNI contains duplicate name types",
-                ));
+                return Err(decode_error(common, "ClientHello SNI contains duplicate name types"));
             }
 
             if let Some(hostname) = sni.get_single_hostname() {
@@ -487,9 +444,7 @@ pub(super) fn process_client_hello<'a>(
         assert!(data.sni.is_none());
         data.sni = Some(sni.clone())
     } else if data.sni != sni {
-        return Err(Error::PeerIncompatibleError(
-            "SNI differed on retry".to_string(),
-        ));
+        return Err(Error::PeerIncompatibleError("SNI differed on retry".to_string()));
     }
 
     // We communicate to the upper layer what kind of key they should choose
@@ -500,11 +455,7 @@ pub(super) fn process_client_hello<'a>(
     let client_suites = supported_cipher_suites
         .iter()
         .copied()
-        .filter(|scs| {
-            client_hello
-                .cipher_suites
-                .contains(&scs.suite())
-        })
+        .filter(|scs| client_hello.cipher_suites.contains(&scs.suite()))
         .collect::<Vec<_>>();
 
     let mut sig_schemes = client_hello

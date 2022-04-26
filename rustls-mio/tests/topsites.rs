@@ -10,10 +10,7 @@ mod online {
     use super::common::TlsClient;
 
     fn check(hostname: &str) {
-        TlsClient::new(hostname)
-            .expect("HTTP/1.[01] ")
-            .go()
-            .unwrap()
+        TlsClient::new(hostname).expect("HTTP/1.[01] ").go().unwrap()
     }
 
     #[test]

@@ -21,19 +21,11 @@ impl ServerCertDetails {
         ocsp_response: Vec<u8>,
         scts: Option<SCTList>,
     ) -> Self {
-        Self {
-            cert_chain,
-            ocsp_response,
-            scts,
-        }
+        Self { cert_chain, ocsp_response, scts }
     }
 
     pub(super) fn scts(&self) -> impl Iterator<Item = &[u8]> {
-        self.scts
-            .as_deref()
-            .unwrap_or(&[])
-            .iter()
-            .map(|payload| payload.0.as_slice())
+        self.scts.as_deref().unwrap_or(&[]).iter().map(|payload| payload.0.as_slice())
     }
 }
 
@@ -43,14 +35,11 @@ pub(super) struct ClientHelloDetails {
 
 impl ClientHelloDetails {
     pub(super) fn new() -> Self {
-        Self {
-            sent_extensions: Vec::new(),
-        }
+        Self { sent_extensions: Vec::new() }
     }
 
     pub(super) fn server_may_send_sct_list(&self) -> bool {
-        self.sent_extensions
-            .contains(&ExtensionType::SCT)
+        self.sent_extensions.contains(&ExtensionType::SCT)
     }
 
     pub(super) fn server_sent_unsolicited_extensions(
@@ -99,11 +88,7 @@ impl ClientAuthDetails {
         if let Some(certkey) = resolver.resolve(&acceptable_issuers, sigschemes) {
             if let Some(signer) = certkey.key.choose_scheme(sigschemes) {
                 debug!("Attempting client auth");
-                return Self::Verify {
-                    certkey,
-                    signer,
-                    auth_context_tls13,
-                };
+                return Self::Verify { certkey, signer, auth_context_tls13 };
             }
         }
 

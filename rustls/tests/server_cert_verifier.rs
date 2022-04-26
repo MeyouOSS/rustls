@@ -24,9 +24,7 @@ fn client_can_override_certificate_verification() {
 
         for version in rustls::ALL_VERSIONS {
             let mut client_config = make_client_config_with_versions(*kt, &[version]);
-            client_config
-                .dangerous()
-                .set_certificate_verifier(verifier.clone());
+            client_config.dangerous().set_certificate_verifier(verifier.clone());
 
             let (mut client, mut server) =
                 make_pair_for_arc_configs(&Arc::new(client_config), &server_config);
@@ -38,17 +36,13 @@ fn client_can_override_certificate_verification() {
 #[test]
 fn client_can_override_certificate_verification_and_reject_certificate() {
     for kt in ALL_KEY_TYPES.iter() {
-        let verifier = Arc::new(MockServerVerifier::rejects_certificate(
-            Error::CorruptMessage,
-        ));
+        let verifier = Arc::new(MockServerVerifier::rejects_certificate(Error::CorruptMessage));
 
         let server_config = Arc::new(make_server_config(*kt));
 
         for version in rustls::ALL_VERSIONS {
             let mut client_config = make_client_config_with_versions(*kt, &[version]);
-            client_config
-                .dangerous()
-                .set_certificate_verifier(verifier.clone());
+            client_config.dangerous().set_certificate_verifier(verifier.clone());
 
             let (mut client, mut server) =
                 make_pair_for_arc_configs(&Arc::new(client_config), &server_config);
@@ -68,13 +62,10 @@ fn client_can_override_certificate_verification_and_reject_certificate() {
 fn client_can_override_certificate_verification_and_reject_tls12_signatures() {
     for kt in ALL_KEY_TYPES.iter() {
         let mut client_config = make_client_config_with_versions(*kt, &[&rustls::version::TLS12]);
-        let verifier = Arc::new(MockServerVerifier::rejects_tls12_signatures(
-            Error::CorruptMessage,
-        ));
+        let verifier =
+            Arc::new(MockServerVerifier::rejects_tls12_signatures(Error::CorruptMessage));
 
-        client_config
-            .dangerous()
-            .set_certificate_verifier(verifier);
+        client_config.dangerous().set_certificate_verifier(verifier);
 
         let server_config = Arc::new(make_server_config(*kt));
 
@@ -95,13 +86,10 @@ fn client_can_override_certificate_verification_and_reject_tls12_signatures() {
 fn client_can_override_certificate_verification_and_reject_tls13_signatures() {
     for kt in ALL_KEY_TYPES.iter() {
         let mut client_config = make_client_config_with_versions(*kt, &[&rustls::version::TLS13]);
-        let verifier = Arc::new(MockServerVerifier::rejects_tls13_signatures(
-            Error::CorruptMessage,
-        ));
+        let verifier =
+            Arc::new(MockServerVerifier::rejects_tls13_signatures(Error::CorruptMessage));
 
-        client_config
-            .dangerous()
-            .set_certificate_verifier(verifier);
+        client_config.dangerous().set_certificate_verifier(verifier);
 
         let server_config = Arc::new(make_server_config(*kt));
 
@@ -127,9 +115,7 @@ fn client_can_override_certificate_verification_and_offer_no_signature_schemes()
 
         for version in rustls::ALL_VERSIONS {
             let mut client_config = make_client_config_with_versions(*kt, &[version]);
-            client_config
-                .dangerous()
-                .set_certificate_verifier(verifier.clone());
+            client_config.dangerous().set_certificate_verifier(verifier.clone());
 
             let (mut client, mut server) =
                 make_pair_for_arc_configs(&Arc::new(client_config), &server_config);
@@ -183,10 +169,7 @@ impl ServerCertVerifier for MockServerVerifier {
         cert: &Certificate,
         dss: &DigitallySignedStruct,
     ) -> Result<HandshakeSignatureValid, Error> {
-        println!(
-            "verify_tls12_signature({:?}, {:?}, {:?})",
-            message, cert, dss
-        );
+        println!("verify_tls12_signature({:?}, {:?}, {:?})", message, cert, dss);
         if let Some(error) = &self.tls12_signature_error {
             Err(error.clone())
         } else {
@@ -200,10 +183,7 @@ impl ServerCertVerifier for MockServerVerifier {
         cert: &Certificate,
         dss: &DigitallySignedStruct,
     ) -> Result<HandshakeSignatureValid, Error> {
-        println!(
-            "verify_tls13_signature({:?}, {:?}, {:?})",
-            message, cert, dss
-        );
+        println!("verify_tls13_signature({:?}, {:?}, {:?})", message, cert, dss);
         if let Some(error) = &self.tls13_signature_error {
             Err(error.clone())
         } else {
@@ -223,38 +203,23 @@ impl ServerCertVerifier for MockServerVerifier {
 
 impl MockServerVerifier {
     pub fn accepts_anything() -> Self {
-        MockServerVerifier {
-            cert_rejection_error: None,
-            ..Default::default()
-        }
+        MockServerVerifier { cert_rejection_error: None, ..Default::default() }
     }
 
     pub fn rejects_certificate(err: Error) -> Self {
-        MockServerVerifier {
-            cert_rejection_error: Some(err),
-            ..Default::default()
-        }
+        MockServerVerifier { cert_rejection_error: Some(err), ..Default::default() }
     }
 
     pub fn rejects_tls12_signatures(err: Error) -> Self {
-        MockServerVerifier {
-            tls12_signature_error: Some(err),
-            ..Default::default()
-        }
+        MockServerVerifier { tls12_signature_error: Some(err), ..Default::default() }
     }
 
     pub fn rejects_tls13_signatures(err: Error) -> Self {
-        MockServerVerifier {
-            tls13_signature_error: Some(err),
-            ..Default::default()
-        }
+        MockServerVerifier { tls13_signature_error: Some(err), ..Default::default() }
     }
 
     pub fn offers_no_signature_schemes() -> Self {
-        MockServerVerifier {
-            signature_schemes: vec![],
-            ..Default::default()
-        }
+        MockServerVerifier { signature_schemes: vec![], ..Default::default() }
     }
 }
 

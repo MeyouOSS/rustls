@@ -30,12 +30,7 @@ impl Secrets {
         suite: &'static Tls13CipherSuite,
         is_client: bool,
     ) -> Self {
-        Self {
-            client,
-            server,
-            suite,
-            is_client,
-        }
+        Self { client, server, suite, is_client }
     }
 
     /// Derive the next set of packet keys
@@ -224,11 +219,7 @@ impl HeaderProtectionKey {
         let pn_len = (first_plain & 0x03) as usize + 1;
 
         *first ^= first_mask & bits;
-        for (dst, m) in packet_number
-            .iter_mut()
-            .zip(pn_mask)
-            .take(pn_len)
-        {
+        for (dst, m) in packet_number.iter_mut().zip(pn_mask).take(pn_len) {
             *dst ^= m;
         }
 
@@ -304,9 +295,7 @@ impl PacketKey {
         let payload_len = payload.len();
         let aad = aead::Aad::from(header);
         let nonce = nonce_for(packet_number, &self.iv);
-        self.key
-            .open_in_place(nonce, aad, payload)
-            .map_err(|_| Error::DecryptError)?;
+        self.key.open_in_place(nonce, aad, payload).map_err(|_| Error::DecryptError)?;
 
         let plain_len = payload_len - self.key.algorithm().tag_len();
         Ok(&payload[..plain_len])
@@ -409,9 +398,7 @@ pub(crate) fn write_hs(this: &mut CommonState, buf: &mut Vec<u8>) -> Option<KeyC
     }
 
     if let Some(secrets) = this.quic.hs_secrets.take() {
-        return Some(KeyChange::Handshake {
-            keys: Keys::new(&secrets),
-        });
+        return Some(KeyChange::Handshake { keys: Keys::new(&secrets) });
     }
 
     if let Some(mut secrets) = this.quic.traffic_secrets.take() {
@@ -419,10 +406,7 @@ pub(crate) fn write_hs(this: &mut CommonState, buf: &mut Vec<u8>) -> Option<KeyC
             this.quic.returned_traffic_keys = true;
             let keys = Keys::new(&secrets);
             secrets.update();
-            return Some(KeyChange::OneRtt {
-                keys,
-                next: secrets,
-            });
+            return Some(KeyChange::OneRtt { keys, next: secrets });
         }
     }
 
@@ -521,17 +505,14 @@ mod test {
 
         let mut buf = PLAIN.to_vec();
         let (header, payload) = buf.split_at_mut(4);
-        let tag = packet
-            .encrypt_in_place(PN, &*header, payload)
-            .unwrap();
+        let tag = packet.encrypt_in_place(PN, &*header, payload).unwrap();
         buf.extend(tag.as_ref());
 
         let pn_offset = 1;
         let (header, sample) = buf.split_at_mut(pn_offset + 4);
         let (first, rest) = header.split_at_mut(1);
         let sample = &sample[..hpk.sample_len()];
-        hpk.encrypt_in_place(sample, &mut first[0], dbg!(rest))
-            .unwrap();
+        hpk.encrypt_in_place(sample, &mut first[0], dbg!(rest)).unwrap();
 
         const PROTECTED: &[u8] = &[
             0x4c, 0xfe, 0x41, 0x89, 0x65, 0x5e, 0x5c, 0xd5, 0x5c, 0x41, 0xf6, 0x90, 0x80, 0x57,
@@ -543,13 +524,10 @@ mod test {
         let (header, sample) = buf.split_at_mut(pn_offset + 4);
         let (first, rest) = header.split_at_mut(1);
         let sample = &sample[..hpk.sample_len()];
-        hpk.decrypt_in_place(sample, &mut first[0], rest)
-            .unwrap();
+        hpk.decrypt_in_place(sample, &mut first[0], rest).unwrap();
 
         let (header, payload_tag) = buf.split_at_mut(4);
-        let plain = packet
-            .decrypt_in_place(PN, &*header, payload_tag)
-            .unwrap();
+        let plain = packet.decrypt_in_place(PN, &*header, payload_tag).unwrap();
 
         assert_eq!(plain, &PLAIN[4..]);
     }
@@ -559,13 +537,9 @@ mod test {
         fn equal_prk(x: &hkdf::Prk, y: &hkdf::Prk) -> bool {
             let mut x_data = [0; 16];
             let mut y_data = [0; 16];
-            let x_okm = x
-                .expand(&[b"info"], &aead::quic::AES_128)
-                .unwrap();
+            let x_okm = x.expand(&[b"info"], &aead::quic::AES_128).unwrap();
             x_okm.fill(&mut x_data[..]).unwrap();
-            let y_okm = y
-                .expand(&[b"info"], &aead::quic::AES_128)
-                .unwrap();
+            let y_okm = y.expand(&[b"info"], &aead::quic::AES_128).unwrap();
             y_okm.fill(&mut y_data[..]).unwrap();
             x_data == y_data
         }

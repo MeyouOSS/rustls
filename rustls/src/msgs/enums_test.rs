@@ -66,10 +66,7 @@ fn test_enums() {
     );
     test_enum16::<ExtensionType>(ExtensionType::ServerName, ExtensionType::RenegotiationInfo);
     test_enum8::<ServerNameType>(ServerNameType::HostName, ServerNameType::HostName);
-    test_enum16::<NamedCurve>(
-        NamedCurve::sect163k1,
-        NamedCurve::arbitrary_explicit_char2_curves,
-    );
+    test_enum16::<NamedCurve>(NamedCurve::sect163k1, NamedCurve::arbitrary_explicit_char2_curves);
     test_enum16::<NamedGroup>(NamedGroup::secp256r1, NamedGroup::FFDHE8192);
     test_enum16::<CipherSuite>(
         CipherSuite::TLS_NULL_WITH_NULL_NULL,

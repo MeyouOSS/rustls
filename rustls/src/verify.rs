@@ -385,10 +385,7 @@ impl CertificateTransparencyPolicy {
         logs: &'static [&'static sct::Log<'static>],
         validation_deadline: SystemTime,
     ) -> Self {
-        Self {
-            logs,
-            validation_deadline,
-        }
+        Self { logs, validation_deadline }
     }
 
     fn verify(
@@ -399,11 +396,7 @@ impl CertificateTransparencyPolicy {
     ) -> Result<(), Error> {
         if self.logs.is_empty() {
             return Ok(());
-        } else if self
-            .validation_deadline
-            .duration_since(now)
-            .is_err()
-        {
+        } else if self.validation_deadline.duration_since(now).is_err() {
             warn!("certificate transparency logs have expired, validation disabled");
             return Ok(());
         }
@@ -441,11 +434,8 @@ impl CertificateTransparencyPolicy {
     }
 }
 
-type CertChainAndRoots<'a, 'b> = (
-    webpki::EndEntityCert<'a>,
-    Vec<&'a [u8]>,
-    Vec<webpki::TrustAnchor<'b>>,
-);
+type CertChainAndRoots<'a, 'b> =
+    (webpki::EndEntityCert<'a>, Vec<&'a [u8]>, Vec<webpki::TrustAnchor<'b>>);
 
 fn prepare<'a, 'b>(
     end_entity: &'a Certificate,
@@ -455,16 +445,10 @@ fn prepare<'a, 'b>(
     // EE cert must appear first.
     let cert = webpki::EndEntityCert::try_from(end_entity.0.as_ref()).map_err(pki_error)?;
 
-    let intermediates: Vec<&'a [u8]> = intermediates
-        .iter()
-        .map(|cert| cert.0.as_ref())
-        .collect();
+    let intermediates: Vec<&'a [u8]> = intermediates.iter().map(|cert| cert.0.as_ref()).collect();
 
-    let trustroots: Vec<webpki::TrustAnchor> = roots
-        .roots
-        .iter()
-        .map(OwnedTrustAnchor::to_trust_anchor)
-        .collect();
+    let trustroots: Vec<webpki::TrustAnchor> =
+        roots.roots.iter().map(OwnedTrustAnchor::to_trust_anchor).collect();
 
     Ok((cert, intermediates, trustroots))
 }
@@ -527,9 +511,7 @@ impl AllowAnyAnonymousOrAuthenticatedClient {
     ///
     /// `roots` is the list of trust anchors to use for certificate validation.
     pub fn new(roots: RootCertStore) -> Arc<dyn ClientCertVerifier> {
-        Arc::new(Self {
-            inner: AllowAnyAuthenticatedClient { roots },
-        })
+        Arc::new(Self { inner: AllowAnyAuthenticatedClient { roots } })
     }
 }
 
@@ -552,8 +534,7 @@ impl ClientCertVerifier for AllowAnyAnonymousOrAuthenticatedClient {
         intermediates: &[Certificate],
         now: SystemTime,
     ) -> Result<ClientCertVerified, Error> {
-        self.inner
-            .verify_client_cert(end_entity, intermediates, now)
+        self.inner.verify_client_cert(end_entity, intermediates, now)
     }
 }
 
@@ -725,10 +706,7 @@ fn unix_time_millis(now: SystemTime) -> Result<u64, Error> {
     now.duration_since(std::time::UNIX_EPOCH)
         .map(|dur| dur.as_secs())
         .map_err(|_| Error::FailedToGetCurrentTime)
-        .and_then(|secs| {
-            secs.checked_mul(1000)
-                .ok_or(Error::FailedToGetCurrentTime)
-        })
+        .and_then(|secs| secs.checked_mul(1000).ok_or(Error::FailedToGetCurrentTime))
 }
 
 #[cfg(test)]
@@ -737,10 +715,7 @@ mod tests {
 
     #[test]
     fn assertions_are_debug() {
-        assert_eq!(
-            format!("{:?}", ClientCertVerified::assertion()),
-            "ClientCertVerified(())"
-        );
+        assert_eq!(format!("{:?}", ClientCertVerified::assertion()), "ClientCertVerified(())");
         assert_eq!(
             format!("{:?}", HandshakeSignatureValid::assertion()),
             "HandshakeSignatureValid(())"
@@ -749,9 +724,6 @@ mod tests {
             format!("{:?}", FinishedMessageVerified::assertion()),
             "FinishedMessageVerified(())"
         );
-        assert_eq!(
-            format!("{:?}", ServerCertVerified::assertion()),
-            "ServerCertVerified(())"
-        );
+        assert_eq!(format!("{:?}", ServerCertVerified::assertion()), "ServerCertVerified(())");
     }
 }

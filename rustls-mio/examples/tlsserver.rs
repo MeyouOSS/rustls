@@ -50,13 +50,7 @@ struct TlsServer {
 
 impl TlsServer {
     fn new(server: TcpListener, mode: ServerMode, cfg: Arc<rustls::ServerConfig>) -> Self {
-        TlsServer {
-            server,
-            connections: HashMap::new(),
-            next_id: 2,
-            tls_config: cfg,
-            mode,
-        }
+        TlsServer { server, connections: HashMap::new(), next_id: 2, tls_config: cfg, mode }
     }
 
     fn accept(&mut self, registry: &mio::Registry) -> Result<(), io::Error> {
@@ -74,15 +68,11 @@ impl TlsServer {
 
                     let mut connection = OpenConnection::new(socket, token, mode, tls_conn);
                     connection.register(registry);
-                    self.connections
-                        .insert(token, connection);
+                    self.connections.insert(token, connection);
                 }
                 Err(ref err) if err.kind() == io::ErrorKind::WouldBlock => return Ok(()),
                 Err(err) => {
-                    println!(
-                        "encountered error while accepting connection; err={:?}",
-                        err
-                    );
+                    println!("encountered error while accepting connection; err={:?}", err);
                     return Err(err);
                 }
             }
@@ -93,10 +83,7 @@ impl TlsServer {
         let token = event.token();
 
         if self.connections.contains_key(&token) {
-            self.connections
-                .get_mut(&token)
-                .unwrap()
-                .ready(registry, event);
+            self.connections.get_mut(&token).unwrap().ready(registry, event);
 
             if self.connections[&token].is_closed() {
                 self.connections.remove(&token);
@@ -184,9 +171,7 @@ impl OpenConnection {
         }
 
         if self.closing {
-            let _ = self
-                .socket
-                .shutdown(net::Shutdown::Both);
+            let _ = self.socket.shutdown(net::Shutdown::Both);
             self.close_back();
             self.closed = true;
             self.deregister(registry);
@@ -199,8 +184,7 @@ impl OpenConnection {
     fn close_back(&mut self) {
         if self.back.is_some() {
             let back = self.back.as_mut().unwrap();
-            back.shutdown(net::Shutdown::Both)
-                .unwrap();
+            back.shutdown(net::Shutdown::Both).unwrap();
         }
         self.back = None;
     }
@@ -243,10 +227,7 @@ impl OpenConnection {
                 let mut buf = Vec::new();
                 buf.resize(io_state.plaintext_bytes_to_read(), 0u8);
 
-                self.tls_conn
-                    .reader()
-                    .read_exact(&mut buf)
-                    .unwrap();
+                self.tls_conn.reader().read_exact(&mut buf).unwrap();
 
                 debug!("plaintext read {:?}", buf.len());
                 self.incoming_plaintext(&buf);
@@ -280,10 +261,7 @@ impl OpenConnection {
                 self.closing = true;
             }
             Some(len) => {
-                self.tls_conn
-                    .writer()
-                    .write_all(&buf[..len])
-                    .unwrap();
+                self.tls_conn.writer().write_all(&buf[..len]).unwrap();
             }
             None => {}
         };
@@ -293,20 +271,13 @@ impl OpenConnection {
     fn incoming_plaintext(&mut self, buf: &[u8]) {
         match self.mode {
             ServerMode::Echo => {
-                self.tls_conn
-                    .writer()
-                    .write_all(buf)
-                    .unwrap();
+                self.tls_conn.writer().write_all(buf).unwrap();
             }
             ServerMode::Http => {
                 self.send_http_response_once();
             }
             ServerMode::Forward(_) => {
-                self.back
-                    .as_mut()
-                    .unwrap()
-                    .write_all(buf)
-                    .unwrap();
+                self.back.as_mut().unwrap().write_all(buf).unwrap();
             }
         }
     }
@@ -315,18 +286,14 @@ impl OpenConnection {
         let response =
             b"HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nHello world from rustls tlsserver\r\n";
         if !self.sent_http_response {
-            self.tls_conn
-                .writer()
-                .write_all(response)
-                .unwrap();
+            self.tls_conn.writer().write_all(response).unwrap();
             self.sent_http_response = true;
             self.tls_conn.send_close_notify();
         }
     }
 
     fn tls_write(&mut self) -> io::Result<usize> {
-        self.tls_conn
-            .write_tls(&mut self.socket)
+        self.tls_conn.write_tls(&mut self.socket)
     }
 
     fn do_tls_write_and_handle_error(&mut self) {
@@ -339,37 +306,25 @@ impl OpenConnection {
 
     fn register(&mut self, registry: &mio::Registry) {
         let event_set = self.event_set();
-        registry
-            .register(&mut self.socket, self.token, event_set)
-            .unwrap();
+        registry.register(&mut self.socket, self.token, event_set).unwrap();
 
         if self.back.is_some() {
             registry
-                .register(
-                    self.back.as_mut().unwrap(),
-                    self.token,
-                    mio::Interest::READABLE,
-                )
+                .register(self.back.as_mut().unwrap(), self.token, mio::Interest::READABLE)
                 .unwrap();
         }
     }
 
     fn reregister(&mut self, registry: &mio::Registry) {
         let event_set = self.event_set();
-        registry
-            .reregister(&mut self.socket, self.token, event_set)
-            .unwrap();
+        registry.reregister(&mut self.socket, self.token, event_set).unwrap();
     }
 
     fn deregister(&mut self, registry: &mio::Registry) {
-        registry
-            .deregister(&mut self.socket)
-            .unwrap();
+        registry.deregister(&mut self.socket).unwrap();
 
         if self.back.is_some() {
-            registry
-                .deregister(self.back.as_mut().unwrap())
-                .unwrap();
+            registry.deregister(self.back.as_mut().unwrap()).unwrap();
         }
     }
 
@@ -497,10 +452,7 @@ fn lookup_versions(versions: &[String]) -> Vec<&'static rustls::SupportedProtoco
         let version = match vname.as_ref() {
             "1.2" => &rustls::version::TLS12,
             "1.3" => &rustls::version::TLS13,
-            _ => panic!(
-                "cannot look up version '{}', valid are '1.2' and '1.3'",
-                vname
-            ),
+            _ => panic!("cannot look up version '{}', valid are '1.2' and '1.3'", vname),
         };
         out.push(version);
     }
@@ -532,20 +484,14 @@ fn load_private_key(filename: &str) -> rustls::PrivateKey {
         }
     }
 
-    panic!(
-        "no keys found in {:?} (encrypted keys not supported)",
-        filename
-    );
+    panic!("no keys found in {:?} (encrypted keys not supported)", filename);
 }
 
 fn load_ocsp(filename: &Option<String>) -> Vec<u8> {
     let mut ret = Vec::new();
 
     if let &Some(ref name) = filename {
-        fs::File::open(name)
-            .expect("cannot open ocsp file")
-            .read_to_end(&mut ret)
-            .unwrap();
+        fs::File::open(name).expect("cannot open ocsp file").read_to_end(&mut ret).unwrap();
     }
 
     ret
@@ -579,16 +525,8 @@ fn make_config(args: &Args) -> Arc<rustls::ServerConfig> {
         rustls::ALL_VERSIONS.to_vec()
     };
 
-    let certs = load_certs(
-        args.flag_certs
-            .as_ref()
-            .expect("--certs option missing"),
-    );
-    let privkey = load_private_key(
-        args.flag_key
-            .as_ref()
-            .expect("--key option missing"),
-    );
+    let certs = load_certs(args.flag_certs.as_ref().expect("--certs option missing"));
+    let privkey = load_private_key(args.flag_key.as_ref().expect("--key option missing"));
     let ocsp = load_ocsp(&args.flag_ocsp);
 
     let mut config = rustls::ServerConfig::builder()
@@ -610,11 +548,8 @@ fn make_config(args: &Args) -> Arc<rustls::ServerConfig> {
         config.ticketer = rustls::Ticketer::new().unwrap();
     }
 
-    config.alpn_protocols = args
-        .flag_proto
-        .iter()
-        .map(|proto| proto.as_bytes().to_vec())
-        .collect::<Vec<_>>();
+    config.alpn_protocols =
+        args.flag_proto.iter().map(|proto| proto.as_bytes().to_vec()).collect::<Vec<_>>();
 
     Arc::new(config)
 }
@@ -629,9 +564,7 @@ fn main() {
         .unwrap_or_else(|e| e.exit());
 
     if args.flag_verbose {
-        env_logger::Builder::new()
-            .parse_filters("trace")
-            .init();
+        env_logger::Builder::new().parse_filters("trace").init();
     }
 
     let mut addr: net::SocketAddr = "0.0.0.0:443".parse().unwrap();
@@ -641,9 +574,7 @@ fn main() {
 
     let mut listener = TcpListener::bind(addr).expect("cannot listen on port");
     let mut poll = mio::Poll::new().unwrap();
-    poll.registry()
-        .register(&mut listener, LISTENER, mio::Interest::READABLE)
-        .unwrap();
+    poll.registry().register(&mut listener, LISTENER, mio::Interest::READABLE).unwrap();
 
     let mode = if args.cmd_echo {
         ServerMode::Echo
@@ -662,9 +593,7 @@ fn main() {
         for event in events.iter() {
             match event.token() {
                 LISTENER => {
-                    tlsserv
-                        .accept(poll.registry())
-                        .expect("error accepting socket");
+                    tlsserv.accept(poll.registry()).expect("error accepting socket");
                 }
                 _ => tlsserv.conn_event(poll.registry(), event),
             }

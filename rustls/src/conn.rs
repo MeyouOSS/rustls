@@ -371,10 +371,7 @@ static TLS13_MAX_DROPPED_CCS: u8 = 2u8;
 
 impl ConnectionRandoms {
     pub(crate) fn new(client: Random, server: Random) -> Self {
-        Self {
-            client: client.0,
-            server: server.0,
-        }
+        Self { client: client.0, server: server.0 }
     }
 }
 
@@ -417,9 +414,7 @@ impl<Data> ConnectionCommon<Data> {
             received_plaintext: &mut self.common_state.received_plaintext,
             /// Are we done? i.e., have we processed all received messages, and received a
             /// close_notify to indicate that no new messages will arrive?
-            peer_cleanly_closed: self
-                .common_state
-                .has_received_close_notify
+            peer_cleanly_closed: self.common_state.has_received_close_notify
                 && !self.message_deframer.has_pending(),
             has_seen_eof: self.common_state.has_seen_eof,
         }
@@ -525,13 +520,8 @@ impl<Data> ConnectionCommon<Data> {
             return Err(Error::corrupt_message(ContentType::Handshake));
         }
 
-        if self
-            .handshake_joiner
-            .take_message(msg)
-            .is_none()
-        {
-            self.common_state
-                .send_fatal_alert(AlertDescription::DecodeError);
+        if self.handshake_joiner.take_message(msg).is_none() {
+            self.common_state.send_fatal_alert(AlertDescription::DecodeError);
             return Err(Error::corrupt_message(ContentType::Handshake));
         }
 
@@ -550,9 +540,7 @@ impl<Data> ConnectionCommon<Data> {
     ) -> Result<Box<dyn State<Data>>, Error> {
         // Drop CCS messages during handshake in TLS1.3
         if msg.typ == ContentType::ChangeCipherSpec
-            && !self
-                .common_state
-                .may_receive_application_data
+            && !self.common_state.may_receive_application_data
             && self.common_state.is_tls13()
         {
             if !is_valid_ccs(&msg)
@@ -561,11 +549,8 @@ impl<Data> ConnectionCommon<Data> {
                 // "An implementation which receives any other change_cipher_spec value or
                 //  which receives a protected change_cipher_spec record MUST abort the
                 //  handshake with an "unexpected_message" alert."
-                self.common_state
-                    .send_fatal_alert(AlertDescription::UnexpectedMessage);
-                return Err(Error::PeerMisbehavedError(
-                    "illegal middlebox CCS received".into(),
-                ));
+                self.common_state.send_fatal_alert(AlertDescription::UnexpectedMessage);
+                return Err(Error::PeerMisbehavedError("illegal middlebox CCS received".into()));
             } else {
                 self.common_state.received_middlebox_ccs += 1;
                 trace!("Dropping CCS");
@@ -574,11 +559,7 @@ impl<Data> ConnectionCommon<Data> {
         }
 
         // Decrypt if demanded by current state.
-        let msg = match self
-            .common_state
-            .record_layer
-            .is_decrypting()
-        {
+        let msg = match self.common_state.record_layer.is_decrypting() {
             true => match self.common_state.decrypt_incoming(msg) {
                 Ok(None) => {
                     // message dropped
@@ -596,17 +577,12 @@ impl<Data> ConnectionCommon<Data> {
         // and processing.
         if self.handshake_joiner.want_message(&msg) {
             // First decryptable handshake message concludes trial decryption
-            self.common_state
-                .record_layer
-                .finish_trial_decryption();
+            self.common_state.record_layer.finish_trial_decryption();
 
-            self.handshake_joiner
-                .take_message(msg)
-                .ok_or_else(|| {
-                    self.common_state
-                        .send_fatal_alert(AlertDescription::DecodeError);
-                    Error::corrupt_message(ContentType::Handshake)
-                })?;
+            self.handshake_joiner.take_message(msg).ok_or_else(|| {
+                self.common_state.send_fatal_alert(AlertDescription::DecodeError);
+                Error::corrupt_message(ContentType::Handshake)
+            })?;
             return self.process_new_handshake_messages(state);
         }
 
@@ -619,8 +595,7 @@ impl<Data> ConnectionCommon<Data> {
             return Ok(state);
         }
 
-        self.common_state
-            .process_main_protocol(msg, state, &mut self.data)
+        self.common_state.process_main_protocol(msg, state, &mut self.data)
     }
 
     /// Processes any new packets read by a previous call to
@@ -674,9 +649,7 @@ impl<Data> ConnectionCommon<Data> {
     ) -> Result<Box<dyn State<Data>>, Error> {
         self.common_state.aligned_handshake = self.handshake_joiner.is_empty();
         while let Some(msg) = self.handshake_joiner.frames.pop_front() {
-            state = self
-                .common_state
-                .process_main_protocol(msg, state, &mut self.data)?;
+            state = self.common_state.process_main_protocol(msg, state, &mut self.data)?;
         }
 
         Ok(state)
@@ -686,8 +659,7 @@ impl<Data> ConnectionCommon<Data> {
         if let Ok(st) = &mut self.state {
             st.perhaps_write_key_update(&mut self.common_state);
         }
-        self.common_state
-            .send_some_plaintext(buf)
+        self.common_state.send_some_plaintext(buf)
     }
 
     /// Read TLS content from `rd`.  This method does internal
@@ -756,17 +728,12 @@ impl<Data> ConnectionCommon<Data> {
             payload: Payload::new(plaintext.to_vec()),
         };
 
-        if self
-            .handshake_joiner
-            .take_message(msg)
-            .is_none()
-        {
+        if self.handshake_joiner.take_message(msg).is_none() {
             self.common_state.quic.alert = Some(AlertDescription::DecodeError);
             return Err(Error::CorruptMessage);
         }
 
-        self.process_new_handshake_messages(state)
-            .map(|state| self.state = Ok(state))
+        self.process_new_handshake_messages(state).map(|state| self.state = Ok(state))
     }
 }
 
@@ -981,10 +948,7 @@ impl CommonState {
         &mut self,
         encr: OpaqueMessage,
     ) -> Result<Option<PlainMessage>, Error> {
-        if self
-            .record_layer
-            .wants_close_before_decrypt()
-        {
+        if self.record_layer.wants_close_before_decrypt() {
             self.send_close_notify();
         }
 
@@ -996,11 +960,7 @@ impl CommonState {
                 self.send_fatal_alert(AlertDescription::RecordOverflow);
                 Err(Error::PeerSentOversizedRecord)
             }
-            Err(Error::DecryptError)
-                if self
-                    .record_layer
-                    .doing_trial_decryption(encrypted_len) =>
-            {
+            Err(Error::DecryptError) if self.record_layer.doing_trial_decryption(encrypted_len) => {
                 trace!("Dropping undecryptable message after aborted early_data");
                 Ok(None)
             }
@@ -1017,8 +977,7 @@ impl CommonState {
     /// the encrypted fragments for sending.
     pub(crate) fn send_msg_encrypt(&mut self, m: PlainMessage) {
         let mut plain_messages = VecDeque::new();
-        self.message_fragmenter
-            .fragment(m, &mut plain_messages);
+        self.message_fragmenter.fragment(m, &mut plain_messages);
 
         for m in plain_messages {
             self.send_single_fragment(m.borrow());
@@ -1032,9 +991,7 @@ impl CommonState {
         // be out by whatever the cipher+record overhead is.  That's a
         // constant and predictable amount, so it's not a terrible issue.
         let len = match limit {
-            Limit::Yes => self
-                .sendable_tls
-                .apply_limit(payload.len()),
+            Limit::Yes => self.sendable_tls.apply_limit(payload.len()),
             Limit::No => payload.len(),
         };
 
@@ -1056,10 +1013,7 @@ impl CommonState {
     fn send_single_fragment(&mut self, m: BorrowedPlainMessage) {
         // Close connection once we start to run out of
         // sequence space.
-        if self
-            .record_layer
-            .wants_close_before_encrypt()
-        {
+        if self.record_layer.wants_close_before_encrypt() {
             self.send_close_notify();
         }
 
@@ -1094,12 +1048,8 @@ impl CommonState {
             // If we haven't completed handshaking, buffer
             // plaintext to send once we do.
             let len = match limit {
-                Limit::Yes => self
-                    .sendable_plaintext
-                    .append_limited_copy(data),
-                Limit::No => self
-                    .sendable_plaintext
-                    .append(data.to_vec()),
+                Limit::Yes => self.sendable_plaintext.append_limited_copy(data),
+                Limit::No => self.sendable_plaintext.append(data.to_vec()),
             };
             return len;
         }
@@ -1199,17 +1149,14 @@ impl CommonState {
                     );
                     let mut bytes = Vec::new();
                     m.payload.encode(&mut bytes);
-                    self.quic
-                        .hs_queue
-                        .push_back((must_encrypt, bytes));
+                    self.quic.hs_queue.push_back((must_encrypt, bytes));
                 }
                 return;
             }
         }
         if !must_encrypt {
             let mut to_send = VecDeque::new();
-            self.message_fragmenter
-                .fragment(m.into(), &mut to_send);
+            self.message_fragmenter.fragment(m.into(), &mut to_send);
             for mm in to_send {
                 self.queue_tls_message(mm.into_unencrypted_opaque());
             }
@@ -1225,10 +1172,8 @@ impl CommonState {
     #[cfg(feature = "tls12")]
     pub(crate) fn start_encryption_tls12(&mut self, secrets: &ConnectionSecrets, side: Side) {
         let (dec, enc) = secrets.make_cipher_pair(side);
-        self.record_layer
-            .prepare_message_encrypter(enc);
-        self.record_layer
-            .prepare_message_decrypter(dec);
+        self.record_layer.prepare_message_encrypter(enc);
+        self.record_layer.prepare_message_decrypter(dec);
     }
 
     #[cfg(feature = "quic")]
@@ -1292,14 +1237,11 @@ impl CommonState {
     }
 
     pub(crate) fn set_max_fragment_size(&mut self, new: Option<usize>) -> Result<(), Error> {
-        self.message_fragmenter
-            .set_max_fragment_size(new)
+        self.message_fragmenter.set_max_fragment_size(new)
     }
 
     pub(crate) fn get_alpn_protocol(&self) -> Option<&[u8]> {
-        self.alpn_protocol
-            .as_ref()
-            .map(AsRef::as_ref)
+        self.alpn_protocol.as_ref().map(AsRef::as_ref)
     }
 
     /// Returns true if the caller should call [`Connection::read_tls`] as soon

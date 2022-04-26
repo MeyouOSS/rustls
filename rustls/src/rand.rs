@@ -6,9 +6,7 @@ use ring::rand::{SecureRandom, SystemRandom};
 
 /// Fill the whole slice with random material.
 pub(crate) fn fill_random(bytes: &mut [u8]) -> Result<(), GetRandomFailed> {
-    SystemRandom::new()
-        .fill(bytes)
-        .map_err(|_| GetRandomFailed)
+    SystemRandom::new().fill(bytes).map_err(|_| GetRandomFailed)
 }
 
 /// Make a Vec<u8> of the given size

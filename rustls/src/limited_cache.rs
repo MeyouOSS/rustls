@@ -39,8 +39,7 @@ where
             }
 
             entry @ Entry::Vacant(_) => {
-                self.oldest
-                    .push_back(entry.key().clone());
+                self.oldest.push_back(entry.key().clone());
                 entry.or_insert(v);
                 true
             }
@@ -69,11 +68,7 @@ where
     {
         if let Some(value) = self.map.remove(k) {
             // O(N) search, followed by O(N) removal
-            if let Some(index) = self
-                .oldest
-                .iter()
-                .position(|item| item.borrow() == k)
-            {
+            if let Some(index) = self.oldest.iter().position(|item| item.borrow() == k) {
                 self.oldest.remove(index);
             }
             Some(value)

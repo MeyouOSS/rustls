@@ -16,10 +16,7 @@ pub(crate) struct HandshakeHashBuffer {
 
 impl HandshakeHashBuffer {
     pub(crate) fn new() -> Self {
-        Self {
-            buffer: Vec::new(),
-            client_auth_enabled: false,
-        }
+        Self { buffer: Vec::new(), client_auth_enabled: false }
     }
 
     /// We might be doing client auth, so need to keep a full
@@ -31,8 +28,7 @@ impl HandshakeHashBuffer {
     /// Hash/buffer a handshake message.
     pub(crate) fn add_message(&mut self, m: &Message) {
         if let MessagePayload::Handshake(hs) = &m.payload {
-            self.buffer
-                .extend_from_slice(&hs.get_encoding());
+            self.buffer.extend_from_slice(&hs.get_encoding());
         }
     }
 
@@ -191,19 +187,9 @@ mod test {
         hhb.update_raw(b"hello");
         assert_eq!(hhb.buffer.len(), 5);
         let mut hh = hhb.start_hash(&digest::SHA256);
-        assert_eq!(
-            hh.client_auth
-                .as_ref()
-                .map(|buf| buf.len()),
-            Some(5)
-        );
+        assert_eq!(hh.client_auth.as_ref().map(|buf| buf.len()), Some(5));
         hh.update_raw(b"world");
-        assert_eq!(
-            hh.client_auth
-                .as_ref()
-                .map(|buf| buf.len()),
-            Some(10)
-        );
+        assert_eq!(hh.client_auth.as_ref().map(|buf| buf.len()), Some(10));
         let h = hh.get_current_hash();
         let h = h.as_ref();
         assert_eq!(h[0], 0x93);
@@ -221,12 +207,7 @@ mod test {
         hhb.update_raw(b"hello");
         assert_eq!(hhb.buffer.len(), 5);
         let mut hh = hhb.start_hash(&digest::SHA256);
-        assert_eq!(
-            hh.client_auth
-                .as_ref()
-                .map(|buf| buf.len()),
-            Some(5)
-        );
+        assert_eq!(hh.client_auth.as_ref().map(|buf| buf.len()), Some(5));
         hh.abandon_client_auth();
         assert_eq!(hh.client_auth, None);
         hh.update_raw(b"world");

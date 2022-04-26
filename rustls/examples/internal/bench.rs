@@ -68,9 +68,7 @@ where
         let mut sz = 0;
 
         while left.wants_write() {
-            let written = left
-                .write_tls(&mut buf[sz..].as_mut())
-                .unwrap();
+            let written = left.write_tls(&mut buf[sz..].as_mut()).unwrap();
             if written == 0 {
                 break;
             }
@@ -85,9 +83,7 @@ where
         let mut offs = 0;
         loop {
             let start = Instant::now();
-            offs += right
-                .read_tls(&mut buf[offs..sz].as_ref())
-                .unwrap();
+            offs += right.read_tls(&mut buf[offs..sz].as_ref()).unwrap();
             let end = Instant::now();
             read_time += duration_nanos(end.duration_since(start));
             if sz == offs {
@@ -156,11 +152,7 @@ impl BenchmarkParam {
         ciphersuite: rustls::SupportedCipherSuite,
         version: &'static rustls::SupportedProtocolVersion,
     ) -> BenchmarkParam {
-        BenchmarkParam {
-            key_type,
-            ciphersuite,
-            version,
-        }
+        BenchmarkParam { key_type, ciphersuite, version }
     }
 }
 
@@ -341,11 +333,8 @@ fn make_client_config(
         .with_root_certificates(root_store);
 
     let mut cfg = if clientauth == ClientAuth::Yes {
-        cfg.with_single_cert(
-            params.key_type.get_client_chain(),
-            params.key_type.get_client_key(),
-        )
-        .unwrap()
+        cfg.with_single_cert(params.key_type.get_client_chain(), params.key_type.get_client_key())
+            .unwrap()
     } else {
         cfg.with_no_client_auth()
     };
@@ -361,9 +350,7 @@ fn make_client_config(
 
 fn apply_work_multiplier(work: u64) -> u64 {
     let mul = match env::var("BENCH_MULTIPLIER") {
-        Ok(val) => val
-            .parse::<f64>()
-            .expect("invalid BENCH_MULTIPLIER value"),
+        Ok(val) => val.parse::<f64>().expect("invalid BENCH_MULTIPLIER value"),
         Err(_) => 1.,
     };
 
@@ -408,11 +395,7 @@ fn bench_handshake(params: &BenchmarkParam, clientauth: ClientAuth, resume: Resu
         params.version,
         params.key_type,
         params.ciphersuite.suite(),
-        if clientauth == ClientAuth::Yes {
-            "mutual"
-        } else {
-            "server-auth"
-        },
+        if clientauth == ClientAuth::Yes { "mutual" } else { "server-auth" },
         resume.label(),
         (rounds as f64) / client_time
     );
@@ -421,11 +404,7 @@ fn bench_handshake(params: &BenchmarkParam, clientauth: ClientAuth, resume: Resu
         params.version,
         params.key_type,
         params.ciphersuite.suite(),
-        if clientauth == ClientAuth::Yes {
-            "mutual"
-        } else {
-            "server-auth"
-        },
+        if clientauth == ClientAuth::Yes { "mutual" } else { "server-auth" },
         resume.label(),
         (rounds as f64) / server_time
     );
@@ -449,12 +428,8 @@ fn do_handshake(client: &mut ClientConnection, server: &mut ServerConnection) {
 
 fn bench_bulk(params: &BenchmarkParam, plaintext_size: u64, max_fragment_size: Option<usize>) {
     let client_config = Arc::new(make_client_config(params, ClientAuth::No, Resumption::No));
-    let server_config = Arc::new(make_server_config(
-        params,
-        ClientAuth::No,
-        Resumption::No,
-        max_fragment_size,
-    ));
+    let server_config =
+        Arc::new(make_server_config(params, ClientAuth::No, Resumption::No, max_fragment_size));
 
     let server_name = "localhost".try_into().unwrap();
     let mut client = ClientConnection::new(client_config, server_name).unwrap();
@@ -491,9 +466,7 @@ fn bench_bulk(params: &BenchmarkParam, plaintext_size: u64, max_fragment_size: O
 
     let mfs_str = format!(
         "max_fragment_size:{}",
-        max_fragment_size
-            .map(|v| v.to_string())
-            .unwrap_or_else(|| "default".to_string())
+        max_fragment_size.map(|v| v.to_string()).unwrap_or_else(|| "default".to_string())
     );
     let total_mbs = ((plaintext_size * rounds) as f64) / (1024. * 1024.);
     println!(
@@ -514,12 +487,7 @@ fn bench_bulk(params: &BenchmarkParam, plaintext_size: u64, max_fragment_size: O
 
 fn bench_memory(params: &BenchmarkParam, conn_count: u64) {
     let client_config = Arc::new(make_client_config(params, ClientAuth::No, Resumption::No));
-    let server_config = Arc::new(make_server_config(
-        params,
-        ClientAuth::No,
-        Resumption::No,
-        None,
-    ));
+    let server_config = Arc::new(make_server_config(params, ClientAuth::No, Resumption::No, None));
 
     // The target here is to end up with conn_count post-handshake
     // server and client sessions.
@@ -534,31 +502,19 @@ fn bench_memory(params: &BenchmarkParam, conn_count: u64) {
     }
 
     for _step in 0..5 {
-        for (client, server) in clients
-            .iter_mut()
-            .zip(servers.iter_mut())
-        {
+        for (client, server) in clients.iter_mut().zip(servers.iter_mut()) {
             do_handshake_step(client, server);
         }
     }
 
     for client in clients.iter_mut() {
-        client
-            .writer()
-            .write_all(&[0u8; 1024])
-            .unwrap();
+        client.writer().write_all(&[0u8; 1024]).unwrap();
     }
 
-    for (client, server) in clients
-        .iter_mut()
-        .zip(servers.iter_mut())
-    {
+    for (client, server) in clients.iter_mut().zip(servers.iter_mut()) {
         transfer(client, server);
         let mut buf = [0u8; 1024];
-        server
-            .reader()
-            .read_exact(&mut buf)
-            .unwrap();
+        server.reader().read_exact(&mut buf).unwrap();
     }
 }
 
@@ -578,23 +534,17 @@ fn lookup_matching_benches(name: &str) -> Vec<&BenchmarkParam> {
 }
 
 fn selected_tests(mut args: env::Args) {
-    let mode = args
-        .next()
-        .expect("first argument must be mode");
+    let mode = args.next().expect("first argument must be mode");
 
     match mode.as_ref() {
         "bulk" => match args.next() {
             Some(suite) => {
                 let len = args
                     .next()
-                    .map(|arg| {
-                        arg.parse::<u64>()
-                            .expect("3rd arg must be plaintext size integer")
-                    })
+                    .map(|arg| arg.parse::<u64>().expect("3rd arg must be plaintext size integer"))
                     .unwrap_or(1048576);
                 let mfs = args.next().map(|arg| {
-                    arg.parse::<usize>()
-                        .expect("4th arg must be max_fragment_size integer")
+                    arg.parse::<usize>().expect("4th arg must be max_fragment_size integer")
                 });
                 for param in lookup_matching_benches(&suite).iter() {
                     bench_bulk(param, len, mfs);
@@ -629,8 +579,7 @@ fn selected_tests(mut args: env::Args) {
                 let count = args
                     .next()
                     .map(|arg| {
-                        arg.parse::<u64>()
-                            .expect("3rd arg must be connection count integer")
+                        arg.parse::<u64>().expect("3rd arg must be connection count integer")
                     })
                     .unwrap_or(1000000);
                 for param in lookup_matching_benches(&suite).iter() {

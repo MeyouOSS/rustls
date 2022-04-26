@@ -26,9 +26,7 @@ fn test_read_fuzz_corpus() {
         f.read_to_end(&mut bytes).unwrap();
 
         let mut rd = Reader::init(&bytes);
-        let msg = OpaqueMessage::read(&mut rd)
-            .unwrap()
-            .into_plain_message();
+        let msg = OpaqueMessage::read(&mut rd).unwrap().into_plain_message();
         println!("{:?}", msg);
 
         let msg = match Message::try_from(msg) {
@@ -36,9 +34,7 @@ fn test_read_fuzz_corpus() {
             Err(_) => continue,
         };
 
-        let enc = PlainMessage::from(msg)
-            .into_unencrypted_opaque()
-            .encode();
+        let enc = PlainMessage::from(msg).into_unencrypted_opaque().encode();
         assert_eq!(bytes.to_vec(), enc);
         assert_eq!(bytes[..rd.used()].to_vec(), enc);
     }
@@ -46,9 +42,7 @@ fn test_read_fuzz_corpus() {
 
 #[test]
 fn can_read_safari_client_hello() {
-    let _ = env_logger::Builder::new()
-        .filter(None, log::LevelFilter::Trace)
-        .try_init();
+    let _ = env_logger::Builder::new().filter(None, log::LevelFilter::Trace).try_init();
 
     let bytes = b"\
         \x16\x03\x01\x00\xeb\x01\x00\x00\xe7\x03\x03\xb6\x1f\xe4\x3a\x55\

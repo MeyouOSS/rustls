@@ -43,11 +43,8 @@ use crate::sign::{CertifiedKey, Signer};
 use std::sync::Arc;
 
 // Extensions we expect in plaintext in the ServerHello.
-static ALLOWED_PLAINTEXT_EXTS: &[ExtensionType] = &[
-    ExtensionType::KeyShare,
-    ExtensionType::PreSharedKey,
-    ExtensionType::SupportedVersions,
-];
+static ALLOWED_PLAINTEXT_EXTS: &[ExtensionType] =
+    &[ExtensionType::KeyShare, ExtensionType::PreSharedKey, ExtensionType::SupportedVersions];
 
 // Only the intersection of things we offer, and those disallowed
 // in TLS1.3
@@ -74,18 +71,13 @@ pub(super) fn handle_server_hello(
 ) -> hs::NextStateOrError {
     validate_server_hello(cx.common, server_hello)?;
 
-    let their_key_share = server_hello
-        .get_key_share()
-        .ok_or_else(|| {
-            cx.common
-                .send_fatal_alert(AlertDescription::MissingExtension);
-            Error::PeerMisbehavedError("missing key share".to_string())
-        })?;
+    let their_key_share = server_hello.get_key_share().ok_or_else(|| {
+        cx.common.send_fatal_alert(AlertDescription::MissingExtension);
+        Error::PeerMisbehavedError("missing key share".to_string())
+    })?;
 
     if our_key_share.group() != their_key_share.group {
-        return Err(cx
-            .common
-            .illegal_param("wrong group for key share"));
+        return Err(cx.common.illegal_param("wrong group for key share"));
     }
 
     let key_schedule_pre_handshake = if let (Some(selected_psk), Some(early_key_schedule)) =
@@ -95,32 +87,24 @@ pub(super) fn handle_server_hello(
             let resuming_suite = match suite.can_resume_from(resuming.suite()) {
                 Some(resuming) => resuming,
                 None => {
-                    return Err(cx
-                        .common
-                        .illegal_param("server resuming incompatible suite"));
+                    return Err(cx.common.illegal_param("server resuming incompatible suite"));
                 }
             };
 
             // If the server varies the suite here, we will have encrypted early data with
             // the wrong suite.
             if cx.data.early_data.is_enabled() && resuming_suite != suite {
-                return Err(cx
-                    .common
-                    .illegal_param("server varied suite with early data"));
+                return Err(cx.common.illegal_param("server varied suite with early data"));
             }
 
             if selected_psk != 0 {
-                return Err(cx
-                    .common
-                    .illegal_param("server selected invalid psk"));
+                return Err(cx.common.illegal_param("server selected invalid psk"));
             }
 
             debug!("Resuming using PSK");
             // The key schedule has been initialized and set in fill_in_psk_binder()
         } else {
-            return Err(Error::PeerMisbehavedError(
-                "server selected unoffered psk".to_string(),
-            ));
+            return Err(Error::PeerMisbehavedError("server selected unoffered psk".to_string()));
         }
         KeySchedulePreHandshake::from(early_key_schedule)
     } else {
@@ -152,15 +136,11 @@ pub(super) fn handle_server_hello(
     );
 
     // Decrypt with the peer's key, encrypt with our own key
-    cx.common
-        .record_layer
-        .set_message_decrypter(suite.derive_decrypter(&server_key));
+    cx.common.record_layer.set_message_decrypter(suite.derive_decrypter(&server_key));
 
     if !cx.data.early_data.is_enabled() {
         // Set the client encryption key for handshakes if early data is not used
-        cx.common
-            .record_layer
-            .set_message_encrypter(suite.derive_encrypter(&client_key));
+        cx.common.record_layer.set_message_encrypter(suite.derive_encrypter(&client_key));
     }
 
     #[cfg(feature = "quic")]
@@ -210,12 +190,7 @@ pub(super) fn initial_key_share(
     let group = maybe_value
         .and_then(|enc| NamedGroup::read_bytes(&enc))
         .and_then(|group| kx::KeyExchange::choose(group, &config.kx_groups))
-        .unwrap_or_else(|| {
-            config
-                .kx_groups
-                .first()
-                .expect("No kx groups configured")
-        });
+        .unwrap_or_else(|| config.kx_groups.first().expect("No kx groups configured"));
 
     kx::KeyExchange::start(group).ok_or(Error::FailedToGetRandomBytes)
 }
@@ -223,9 +198,7 @@ pub(super) fn initial_key_share(
 fn save_kx_hint(config: &ClientConfig, server_name: &ServerName, group: NamedGroup) {
     let key = persist::ClientSessionKey::hint_for_server_name(server_name);
 
-    config
-        .session_storage
-        .put(key.get_encoding(), group.get_encoding());
+    config.session_storage.put(key.get_encoding(), group.get_encoding());
 }
 
 /// This implements the horrifying TLS1.3 hack where PSK binders have a
@@ -271,9 +244,7 @@ pub(super) fn prepare_resumption(
     // PreSharedKey extension.
     let max_early_data_size = resuming_session.max_early_data_size();
     if config.enable_early_data && max_early_data_size > 0 && !doing_retry {
-        cx.data
-            .early_data
-            .enable(max_early_data_size as usize);
+        cx.data.early_data.enable(max_early_data_size as usize);
         exts.push(ClientExtension::EarlyData);
     }
 
@@ -284,9 +255,7 @@ pub(super) fn prepare_resumption(
     // the message it's contained in (!!!).
     let obfuscated_ticket_age = resuming_session.obfuscated_ticket_age();
 
-    let binder_len = resuming_suite
-        .hash_algorithm()
-        .output_len;
+    let binder_len = resuming_suite.hash_algorithm().output_len;
     let binder = vec![0u8; binder_len];
 
     let psk_identity = PresharedKeyIdentity::new(ticket, obfuscated_ticket_age);
@@ -423,19 +392,12 @@ impl State<ClientConnectionData> for ExpectEncryptedExtensions {
 
             if was_early_traffic && !cx.common.early_traffic {
                 // If no early traffic, set the encryption key for handshakes
-                cx.common
-                    .record_layer
-                    .set_message_encrypter(
-                        self.suite
-                            .derive_encrypter(self.key_schedule.client_key()),
-                    );
+                cx.common.record_layer.set_message_encrypter(
+                    self.suite.derive_encrypter(self.key_schedule.client_key()),
+                );
             }
 
-            cx.common.peer_certificates = Some(
-                resuming_session
-                    .server_cert_chain()
-                    .to_vec(),
-            );
+            cx.common.peer_certificates = Some(resuming_session.server_cert_chain().to_vec());
 
             // We *don't* reverify the certificate chain here: resumption is a
             // continuation of the previous session in terms of security policy.
@@ -513,10 +475,7 @@ impl State<ClientConnectionData> for ExpectCertificateOrCertReq {
             payload => Err(inappropriate_handshake_message(
                 &payload,
                 &[ContentType::Handshake],
-                &[
-                    HandshakeType::Certificate,
-                    HandshakeType::CertificateRequest,
-                ],
+                &[HandshakeType::Certificate, HandshakeType::CertificateRequest],
             )),
         }
     }
@@ -551,8 +510,7 @@ impl State<ClientConnectionData> for ExpectCertificateRequest {
         // Must be empty during handshake.
         if !certreq.context.0.is_empty() {
             warn!("Server sent non-empty certreq context");
-            cx.common
-                .send_fatal_alert(AlertDescription::DecodeError);
+            cx.common.send_fatal_alert(AlertDescription::DecodeError);
             return Err(Error::corrupt_message(ContentType::Handshake));
         }
 
@@ -567,17 +525,14 @@ impl State<ClientConnectionData> for ExpectCertificateRequest {
             .collect::<Vec<SignatureScheme>>();
 
         if compat_sigschemes.is_empty() {
-            cx.common
-                .send_fatal_alert(AlertDescription::HandshakeFailure);
+            cx.common.send_fatal_alert(AlertDescription::HandshakeFailure);
             return Err(Error::PeerIncompatibleError(
                 "server sent bad certreq schemes".to_string(),
             ));
         }
 
         let client_auth = ClientAuthDetails::resolve(
-            self.config
-                .client_auth_cert_resolver
-                .as_ref(),
+            self.config.client_auth_cert_resolver.as_ref(),
             certreq.get_authorities_extension(),
             &compat_sigschemes,
             Some(certreq.context.0.clone()),
@@ -619,8 +574,7 @@ impl State<ClientConnectionData> for ExpectCertificate {
         // This is only non-empty for client auth.
         if !cert_chain.context.0.is_empty() {
             warn!("certificate with non-empty context during handshake");
-            cx.common
-                .send_fatal_alert(AlertDescription::DecodeError);
+            cx.common.send_fatal_alert(AlertDescription::DecodeError);
             return Err(Error::corrupt_message(ContentType::Handshake));
         }
 
@@ -628,11 +582,8 @@ impl State<ClientConnectionData> for ExpectCertificate {
             || cert_chain.any_entry_has_unknown_extension()
         {
             warn!("certificate chain contains unsolicited/unknown extension");
-            cx.common
-                .send_fatal_alert(AlertDescription::UnsupportedExtension);
-            return Err(Error::PeerMisbehavedError(
-                "bad cert chain extensions".to_string(),
-            ));
+            cx.common.send_fatal_alert(AlertDescription::UnsupportedExtension);
+            return Err(Error::PeerMisbehavedError("bad cert chain extensions".to_string()));
         }
 
         let server_cert = ServerCertDetails::new(
@@ -689,11 +640,8 @@ impl State<ClientConnectionData> for ExpectCertificateVerify {
         trace!("Server cert is {:?}", self.server_cert.cert_chain);
 
         // 1. Verify the certificate chain.
-        let (end_entity, intermediates) = self
-            .server_cert
-            .cert_chain
-            .split_first()
-            .ok_or(Error::NoCertificatesPresented)?;
+        let (end_entity, intermediates) =
+            self.server_cert.cert_chain.split_first().ok_or(Error::NoCertificatesPresented)?;
         let now = std::time::SystemTime::now();
         let cert_verified = self
             .config
@@ -745,16 +693,12 @@ fn emit_certificate_tls13(
 ) {
     let context = auth_context.unwrap_or_default();
 
-    let mut cert_payload = CertificatePayloadTLS13 {
-        context: PayloadU8::new(context),
-        entries: Vec::new(),
-    };
+    let mut cert_payload =
+        CertificatePayloadTLS13 { context: PayloadU8::new(context), entries: Vec::new() };
 
     if let Some(certkey) = certkey {
         for cert in &certkey.cert {
-            cert_payload
-                .entries
-                .push(CertificateEntry::new(cert.clone()));
+            cert_payload.entries.push(CertificateEntry::new(cert.clone()));
         }
     }
 
@@ -848,14 +792,11 @@ impl State<ClientConnectionData> for ExpectFinished {
             require_handshake_msg!(m, HandshakeType::Finished, HandshakePayload::Finished)?;
 
         let handshake_hash = st.transcript.get_current_hash();
-        let expect_verify_data = st
-            .key_schedule
-            .sign_server_finish(&handshake_hash);
+        let expect_verify_data = st.key_schedule.sign_server_finish(&handshake_hash);
 
         let fin = constant_time::verify_slices_are_equal(expect_verify_data.as_ref(), &finished.0)
             .map_err(|_| {
-                cx.common
-                    .send_fatal_alert(AlertDescription::DecryptError);
+                cx.common.send_fatal_alert(AlertDescription::DecryptError);
                 Error::DecryptError
             })
             .map(|_| verify::FinishedMessageVerified::assertion())?;
@@ -871,26 +812,17 @@ impl State<ClientConnectionData> for ExpectFinished {
             cx.data.early_data.finished();
             cx.common
                 .record_layer
-                .set_message_encrypter(
-                    st.suite
-                        .derive_encrypter(st.key_schedule.client_key()),
-                );
+                .set_message_encrypter(st.suite.derive_encrypter(st.key_schedule.client_key()));
         }
 
         /* Send our authentication/finished messages.  These are still encrypted
          * with our handshake keys. */
         if let Some(client_auth) = st.client_auth {
             match client_auth {
-                ClientAuthDetails::Empty {
-                    auth_context_tls13: auth_context,
-                } => {
+                ClientAuthDetails::Empty { auth_context_tls13: auth_context } => {
                     emit_certificate_tls13(&mut st.transcript, None, auth_context, cx.common);
                 }
-                ClientAuthDetails::Verify {
-                    certkey,
-                    signer,
-                    auth_context_tls13: auth_context,
-                } => {
+                ClientAuthDetails::Verify { certkey, signer, auth_context_tls13: auth_context } => {
                     emit_certificate_tls13(
                         &mut st.transcript,
                         Some(&certkey),
@@ -902,9 +834,8 @@ impl State<ClientConnectionData> for ExpectFinished {
             }
         }
 
-        let (key_schedule_finished, client_key, server_key) = st
-            .key_schedule
-            .into_traffic_with_client_finished_pending(
+        let (key_schedule_finished, client_key, server_key) =
+            st.key_schedule.into_traffic_with_client_finished_pending(
                 hash_after_handshake,
                 &*st.config.key_log,
                 &st.randoms.client,
@@ -917,13 +848,9 @@ impl State<ClientConnectionData> for ExpectFinished {
         /* Now move to our application traffic keys. */
         cx.common.check_aligned_handshake()?;
 
-        cx.common
-            .record_layer
-            .set_message_decrypter(st.suite.derive_decrypter(&server_key));
+        cx.common.record_layer.set_message_decrypter(st.suite.derive_decrypter(&server_key));
 
-        cx.common
-            .record_layer
-            .set_message_encrypter(st.suite.derive_encrypter(&client_key));
+        cx.common.record_layer.set_message_encrypter(st.suite.derive_encrypter(&client_key));
 
         cx.common.start_traffic();
 
@@ -975,8 +902,7 @@ impl ExpectTraffic {
         nst: &NewSessionTicketPayloadTLS13,
     ) -> Result<(), Error> {
         if nst.has_duplicate_extension() {
-            cx.common
-                .send_fatal_alert(AlertDescription::IllegalParameter);
+            cx.common.send_fatal_alert(AlertDescription::IllegalParameter);
             return Err(Error::PeerMisbehavedError(
                 "peer sent duplicate NewSessionTicket extensions".into(),
             ));
@@ -1000,23 +926,17 @@ impl ExpectTraffic {
             self.suite,
             nst.ticket.0.clone(),
             secret,
-            cx.common
-                .peer_certificates
-                .clone()
-                .unwrap_or_default(),
+            cx.common.peer_certificates.clone().unwrap_or_default(),
             time_now,
             nst.lifetime,
             nst.age_add,
-            nst.get_max_early_data_size()
-                .unwrap_or_default(),
+            nst.get_max_early_data_size().unwrap_or_default(),
         );
 
         #[cfg(feature = "quic")]
         if let Some(sz) = nst.get_max_early_data_size() {
             if cx.common.protocol == Protocol::Quic && sz != 0 && sz != 0xffff_ffff {
-                return Err(Error::PeerMisbehavedError(
-                    "invalid max_early_data_size".into(),
-                ));
+                return Err(Error::PeerMisbehavedError("invalid max_early_data_size".into()));
             }
         }
 
@@ -1031,9 +951,7 @@ impl ExpectTraffic {
             PayloadU16::encode_slice(quic_params, &mut ticket);
         }
 
-        let worked = self
-            .session_storage
-            .put(key.get_encoding(), ticket);
+        let worked = self.session_storage.put(key.get_encoding(), ticket);
 
         if worked {
             debug!("Ticket saved");
@@ -1073,15 +991,8 @@ impl ExpectTraffic {
         }
 
         // Update our read-side keys.
-        let new_read_key = self
-            .key_schedule
-            .next_server_application_traffic_secret();
-        common
-            .record_layer
-            .set_message_decrypter(
-                self.suite
-                    .derive_decrypter(&new_read_key),
-            );
+        let new_read_key = self.key_schedule.next_server_application_traffic_secret();
+        common.record_layer.set_message_decrypter(self.suite.derive_decrypter(&new_read_key));
 
         Ok(())
     }
@@ -1090,9 +1001,7 @@ impl ExpectTraffic {
 impl State<ClientConnectionData> for ExpectTraffic {
     fn handle(mut self: Box<Self>, cx: &mut ClientContext<'_>, m: Message) -> hs::NextStateOrError {
         match m.payload {
-            MessagePayload::ApplicationData(payload) => cx
-                .common
-                .take_received_plaintext(payload),
+            MessagePayload::ApplicationData(payload) => cx.common.take_received_plaintext(payload),
             MessagePayload::Handshake(HandshakeMessagePayload {
                 payload: HandshakePayload::NewSessionTicketTLS13(ref new_ticket),
                 ..
@@ -1119,8 +1028,7 @@ impl State<ClientConnectionData> for ExpectTraffic {
         label: &[u8],
         context: Option<&[u8]>,
     ) -> Result<(), Error> {
-        self.key_schedule
-            .export_keying_material(output, label, context)
+        self.key_schedule.export_keying_material(output, label, context)
     }
 
     fn perhaps_write_key_update(&mut self, common: &mut CommonState) {
@@ -1128,12 +1036,8 @@ impl State<ClientConnectionData> for ExpectTraffic {
             self.want_write_key_update = false;
             common.send_msg_encrypt(Message::build_key_update_notify().into());
 
-            let write_key = self
-                .key_schedule
-                .next_client_application_traffic_secret();
-            common
-                .record_layer
-                .set_message_encrypter(self.suite.derive_encrypter(&write_key));
+            let write_key = self.key_schedule.next_client_application_traffic_secret();
+            common.record_layer.set_message_encrypter(self.suite.derive_encrypter(&write_key));
         }
     }
 }
@@ -1149,8 +1053,7 @@ impl State<ClientConnectionData> for ExpectQuicTraffic {
             HandshakeType::NewSessionTicket,
             HandshakePayload::NewSessionTicketTLS13
         )?;
-        self.0
-            .handle_new_ticket_tls13(cx, nst)?;
+        self.0.handle_new_ticket_tls13(cx, nst)?;
         Ok(self)
     }
 
@@ -1160,7 +1063,6 @@ impl State<ClientConnectionData> for ExpectQuicTraffic {
         label: &[u8],
         context: Option<&[u8]>,
     ) -> Result<(), Error> {
-        self.0
-            .export_keying_material(output, label, context)
+        self.0.export_keying_material(output, label, context)
     }
 }

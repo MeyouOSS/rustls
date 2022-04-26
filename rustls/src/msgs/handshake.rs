@@ -154,10 +154,7 @@ impl SessionID {
     }
 
     pub fn empty() -> Self {
-        Self {
-            data: [0u8; 32],
-            len: 0,
-        }
+        Self { data: [0u8; 32], len: 0 }
     }
 
     pub fn len(&self) -> usize {
@@ -334,9 +331,7 @@ impl ConvertServerNameList for ServerNameRequest {
             }
         }
 
-        self.iter()
-            .filter_map(only_dns_hostnames)
-            .next()
+        self.iter().filter_map(only_dns_hostnames).next()
     }
 }
 
@@ -360,9 +355,7 @@ impl ConvertProtocolNameList for ProtocolNameList {
     }
 
     fn to_slices(&self) -> Vec<&[u8]> {
-        self.iter()
-            .map(|proto| -> &[u8] { &proto.0 })
-            .collect::<Vec<&[u8]>>()
+        self.iter().map(|proto| -> &[u8] { &proto.0 }).collect::<Vec<&[u8]>>()
     }
 
     fn as_single_slice(&self) -> Option<&[u8]> {
@@ -383,10 +376,7 @@ pub struct KeyShareEntry {
 
 impl KeyShareEntry {
     pub fn new(group: NamedGroup, payload: &[u8]) -> Self {
-        Self {
-            group,
-            payload: PayloadU16::new(payload.to_vec()),
-        }
+        Self { group, payload: PayloadU16::new(payload.to_vec()) }
     }
 }
 
@@ -413,10 +403,7 @@ pub struct PresharedKeyIdentity {
 
 impl PresharedKeyIdentity {
     pub fn new(id: Vec<u8>, age: u32) -> Self {
-        Self {
-            identity: PayloadU16::new(id),
-            obfuscated_ticket_age: age,
-        }
+        Self { identity: PayloadU16::new(id), obfuscated_ticket_age: age }
     }
 }
 
@@ -427,10 +414,7 @@ impl Codec for PresharedKeyIdentity {
     }
 
     fn read(r: &mut Reader) -> Option<Self> {
-        Some(Self {
-            identity: PayloadU16::read(r)?,
-            obfuscated_ticket_age: u32::read(r)?,
-        })
+        Some(Self { identity: PayloadU16::read(r)?, obfuscated_ticket_age: u32::read(r)? })
     }
 }
 
@@ -447,10 +431,7 @@ pub struct PresharedKeyOffer {
 impl PresharedKeyOffer {
     /// Make a new one with one entry.
     pub fn new(id: PresharedKeyIdentity, binder: Vec<u8>) -> Self {
-        Self {
-            identities: vec![id],
-            binders: vec![PresharedKeyBinder::new(binder)],
-        }
+        Self { identities: vec![id], binders: vec![PresharedKeyBinder::new(binder)] }
     }
 }
 
@@ -485,10 +466,7 @@ impl Codec for OCSPCertificateStatusRequest {
     }
 
     fn read(r: &mut Reader) -> Option<Self> {
-        Some(Self {
-            responder_ids: ResponderIDs::read(r)?,
-            extensions: PayloadU16::read(r)?,
-        })
+        Some(Self { responder_ids: ResponderIDs::read(r)?, extensions: PayloadU16::read(r)? })
     }
 }
 
@@ -691,9 +669,7 @@ fn trim_hostname_trailing_dot_for_sni(dns_name: webpki::DnsNameRef) -> webpki::D
     // ASCII encoding without a trailing dot"
     if dns_name_str.ends_with('.') {
         let trimmed = &dns_name_str[0..dns_name_str.len() - 1];
-        webpki::DnsNameRef::try_from_ascii_str(trimmed)
-            .unwrap()
-            .to_owned()
+        webpki::DnsNameRef::try_from_ascii_str(trimmed).unwrap().to_owned()
     } else {
         dns_name.to_owned()
     }
@@ -908,9 +884,7 @@ impl ClientHelloPayload {
     }
 
     pub fn find_extension(&self, ext: ExtensionType) -> Option<&ClientExtension> {
-        self.extensions
-            .iter()
-            .find(|x| x.get_type() == ext)
+        self.extensions.iter().find(|x| x.get_type() == ext)
     }
 
     pub fn get_sni_extension(&self) -> Option<&ServerNameRequest> {
@@ -1009,9 +983,7 @@ impl ClientHelloPayload {
     }
 
     pub fn check_psk_ext_is_last(&self) -> bool {
-        self.extensions
-            .last()
-            .map_or(false, |ext| ext.get_type() == ExtensionType::PreSharedKey)
+        self.extensions.last().map_or(false, |ext| ext.get_type() == ExtensionType::PreSharedKey)
     }
 
     pub fn get_psk_modes(&self) -> Option<&PSKKeyExchangeModes> {
@@ -1023,9 +995,7 @@ impl ClientHelloPayload {
     }
 
     pub fn psk_mode_offered(&self, mode: PSKKeyExchangeMode) -> bool {
-        self.get_psk_modes()
-            .map(|modes| modes.contains(&mode))
-            .unwrap_or(false)
+        self.get_psk_modes().map(|modes| modes.contains(&mode)).unwrap_or(false)
     }
 
     pub fn set_psk_binder(&mut self, binder: impl Into<Vec<u8>>) {
@@ -1036,13 +1006,11 @@ impl ClientHelloPayload {
     }
 
     pub fn ems_support_offered(&self) -> bool {
-        self.find_extension(ExtensionType::ExtendedMasterSecret)
-            .is_some()
+        self.find_extension(ExtensionType::ExtendedMasterSecret).is_some()
     }
 
     pub fn early_data_extension_offered(&self) -> bool {
-        self.find_extension(ExtensionType::EarlyData)
-            .is_some()
+        self.find_extension(ExtensionType::EarlyData).is_some()
     }
 }
 
@@ -1166,9 +1134,7 @@ impl HelloRetryRequest {
     }
 
     fn find_extension(&self, ext: ExtensionType) -> Option<&HelloRetryExtension> {
-        self.extensions
-            .iter()
-            .find(|x| x.get_type() == ext)
+        self.extensions.iter().find(|x| x.get_type() == ext)
     }
 
     pub fn get_requested_key_share_group(&self) -> Option<NamedGroup> {
@@ -1273,8 +1239,7 @@ impl ServerHelloPayload {
     }
 
     pub fn ems_support_acked(&self) -> bool {
-        self.find_extension(ExtensionType::ExtendedMasterSecret)
-            .is_some()
+        self.find_extension(ExtensionType::ExtendedMasterSecret).is_some()
     }
 
     pub fn get_sct_list(&self) -> Option<&SCTList> {
@@ -1402,19 +1367,13 @@ impl Codec for CertificateEntry {
     }
 
     fn read(r: &mut Reader) -> Option<Self> {
-        Some(Self {
-            cert: key::Certificate::read(r)?,
-            exts: CertificateExtensions::read(r)?,
-        })
+        Some(Self { cert: key::Certificate::read(r)?, exts: CertificateExtensions::read(r)? })
     }
 }
 
 impl CertificateEntry {
     pub fn new(cert: key::Certificate) -> Self {
-        Self {
-            cert,
-            exts: Vec::new(),
-        }
+        Self { cert, exts: Vec::new() }
     }
 
     pub fn has_duplicate_extension(&self) -> bool {
@@ -1475,10 +1434,7 @@ impl Codec for CertificatePayloadTLS13 {
 
 impl CertificatePayloadTLS13 {
     pub fn new(entries: Vec<CertificateEntry>) -> Self {
-        Self {
-            context: PayloadU8::empty(),
-            entries,
-        }
+        Self { context: PayloadU8::empty(), entries }
     }
 
     pub fn any_entry_has_duplicate_extension(&self) -> bool {
@@ -1520,10 +1476,7 @@ impl CertificatePayloadTLS13 {
     }
 
     pub fn get_end_entity_scts(&self) -> Option<SCTList> {
-        self.entries
-            .first()
-            .and_then(CertificateEntry::get_scts)
-            .cloned()
+        self.entries.first().and_then(CertificateEntry::get_scts).cloned()
     }
 
     pub fn convert(&self) -> CertificatePayload {
@@ -1569,10 +1522,7 @@ impl Codec for ECParameters {
 
         let grp = NamedGroup::read(r)?;
 
-        Some(Self {
-            curve_type: ct,
-            named_group: grp,
-        })
+        Some(Self { curve_type: ct, named_group: grp })
     }
 }
 
@@ -1584,10 +1534,7 @@ pub struct DigitallySignedStruct {
 
 impl DigitallySignedStruct {
     pub fn new(scheme: SignatureScheme, sig: Vec<u8>) -> Self {
-        Self {
-            scheme,
-            sig: PayloadU16::new(sig),
-        }
+        Self { scheme, sig: PayloadU16::new(sig) }
     }
 }
 
@@ -1630,10 +1577,7 @@ pub struct ServerECDHParams {
 impl ServerECDHParams {
     pub fn new(named_group: NamedGroup, pubkey: &[u8]) -> Self {
         Self {
-            curve_params: ECParameters {
-                curve_type: ECCurveType::NamedCurve,
-                named_group,
-            },
+            curve_params: ECParameters { curve_type: ECCurveType::NamedCurve, named_group },
             public: PayloadU8::new(pubkey.to_vec()),
         }
     }
@@ -1649,10 +1593,7 @@ impl Codec for ServerECDHParams {
         let cp = ECParameters::read(r)?;
         let pb = PayloadU8::read(r)?;
 
-        Some(Self {
-            curve_params: cp,
-            public: pb,
-        })
+        Some(Self { curve_params: cp, public: pb })
     }
 }
 
@@ -1740,9 +1681,7 @@ pub trait HasServerExtensions {
     }
 
     fn find_extension(&self, ext: ExtensionType) -> Option<&ServerExtension> {
-        self.get_extensions()
-            .iter()
-            .find(|x| x.get_type() == ext)
+        self.get_extensions().iter().find(|x| x.get_type() == ext)
     }
 
     fn get_alpn_protocol(&self) -> Option<&[u8]> {
@@ -1765,8 +1704,7 @@ pub trait HasServerExtensions {
     }
 
     fn early_data_extension_offered(&self) -> bool {
-        self.find_extension(ExtensionType::EarlyData)
-            .is_some()
+        self.find_extension(ExtensionType::EarlyData).is_some()
     }
 }
 
@@ -1804,11 +1742,7 @@ impl Codec for CertificateRequestPayload {
             warn!("meaningless CertificateRequest message");
             None
         } else {
-            Some(Self {
-                certtypes,
-                sigschemes,
-                canames,
-            })
+            Some(Self { certtypes, sigschemes, canames })
         }
     }
 }
@@ -1891,18 +1825,13 @@ impl Codec for CertificateRequestPayloadTLS13 {
         let context = PayloadU8::read(r)?;
         let extensions = CertReqExtensions::read(r)?;
 
-        Some(Self {
-            context,
-            extensions,
-        })
+        Some(Self { context, extensions })
     }
 }
 
 impl CertificateRequestPayloadTLS13 {
     pub fn find_extension(&self, ext: ExtensionType) -> Option<&CertReqExtension> {
-        self.extensions
-            .iter()
-            .find(|x| x.get_type() == ext)
+        self.extensions.iter().find(|x| x.get_type() == ext)
     }
 
     pub fn get_sigalgs_extension(&self) -> Option<&SupportedSignatureSchemes> {
@@ -1931,10 +1860,7 @@ pub struct NewSessionTicketPayload {
 
 impl NewSessionTicketPayload {
     pub fn new(lifetime_hint: u32, ticket: Vec<u8>) -> Self {
-        Self {
-            lifetime_hint,
-            ticket: PayloadU16::new(ticket),
-        }
+        Self { lifetime_hint, ticket: PayloadU16::new(ticket) }
     }
 }
 
@@ -1948,10 +1874,7 @@ impl Codec for NewSessionTicketPayload {
         let lifetime = u32::read(r)?;
         let ticket = PayloadU16::read(r)?;
 
-        Some(Self {
-            lifetime_hint: lifetime,
-            ticket,
-        })
+        Some(Self { lifetime_hint: lifetime, ticket })
     }
 }
 
@@ -2041,9 +1964,7 @@ impl NewSessionTicketPayloadTLS13 {
     }
 
     pub fn find_extension(&self, ext: ExtensionType) -> Option<&NewSessionTicketExtension> {
-        self.exts
-            .iter()
-            .find(|x| x.get_type() == ext)
+        self.exts.iter().find(|x| x.get_type() == ext)
     }
 
     pub fn get_max_early_data_size(&self) -> Option<u32> {
@@ -2071,13 +1992,7 @@ impl Codec for NewSessionTicketPayloadTLS13 {
         let ticket = PayloadU16::read(r)?;
         let exts = NewSessionTicketExtensions::read(r)?;
 
-        Some(Self {
-            lifetime,
-            age_add,
-            nonce,
-            ticket,
-            exts,
-        })
+        Some(Self { lifetime, age_add, nonce, ticket, exts })
     }
 }
 
@@ -2099,9 +2014,7 @@ impl Codec for CertificateStatus {
         let typ = CertificateStatusType::read(r)?;
 
         match typ {
-            CertificateStatusType::OCSP => Some(Self {
-                ocsp_response: PayloadU24::read(r)?,
-            }),
+            CertificateStatusType::OCSP => Some(Self { ocsp_response: PayloadU24::read(r)? }),
             _ => None,
         }
     }
@@ -2109,9 +2022,7 @@ impl Codec for CertificateStatus {
 
 impl CertificateStatus {
     pub fn new(ocsp: Vec<u8>) -> Self {
-        Self {
-            ocsp_response: PayloadU24::new(ocsp),
-        }
+        Self { ocsp_response: PayloadU24::new(ocsp) }
     }
 
     pub fn into_inner(self) -> Vec<u8> {
@@ -2312,9 +2223,7 @@ impl HandshakeMessagePayload {
             HandshakePayload::ClientHello(ref ch) => match ch.extensions.last() {
                 Some(ClientExtension::PresharedKey(ref offer)) => {
                     let mut binders_encoding = Vec::new();
-                    offer
-                        .binders
-                        .encode(&mut binders_encoding);
+                    offer.binders.encode(&mut binders_encoding);
                     binders_encoding.len()
                 }
                 _ => 0,

@@ -243,8 +243,7 @@ impl TlsClient {
     }
 
     pub fn expect(&mut self, expect: &str) -> &mut TlsClient {
-        self.expect_output
-            .push(expect.to_string());
+        self.expect_output.push(expect.to_string());
         self
     }
 
@@ -292,13 +291,7 @@ impl TlsClient {
 
         if self.cafile.is_some() {
             args.push("--cafile");
-            args.push(
-                self.cafile
-                    .as_ref()
-                    .unwrap()
-                    .to_str()
-                    .unwrap(),
-            );
+            args.push(self.cafile.as_ref().unwrap().to_str().unwrap());
         }
 
         for suite in &self.suites {
@@ -312,10 +305,7 @@ impl TlsClient {
 
         if self.max_fragment_size.is_some() {
             args.push("--max-frag-size");
-            fragstring = self
-                .max_fragment_size
-                .unwrap()
-                .to_string();
+            fragstring = self.max_fragment_size.unwrap().to_string();
             args.push(&fragstring);
         }
 

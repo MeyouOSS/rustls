@@ -64,10 +64,7 @@ fn test_servo_cert() {
     Context::new(
         "servo",
         "servo.org",
-        &[
-            include_bytes!("testdata/cert-servo.0.der"),
-            include_bytes!("testdata/cert-servo.1.der"),
-        ],
+        &[include_bytes!("testdata/cert-servo.0.der"), include_bytes!("testdata/cert-servo.1.der")],
     )
     .bench(100)
 }
@@ -116,10 +113,7 @@ fn test_hn_cert() {
     Context::new(
         "hn",
         "news.ycombinator.com",
-        &[
-            include_bytes!("testdata/cert-hn.0.der"),
-            include_bytes!("testdata/cert-hn.1.der"),
-        ],
+        &[include_bytes!("testdata/cert-hn.0.der"), include_bytes!("testdata/cert-hn.1.der")],
     )
     .bench(100)
 }
@@ -169,10 +163,7 @@ fn test_wapo_cert() {
     Context::new(
         "wapo",
         "www.washingtonpost.com",
-        &[
-            include_bytes!("testdata/cert-wapo.0.der"),
-            include_bytes!("testdata/cert-wapo.1.der"),
-        ],
+        &[include_bytes!("testdata/cert-wapo.0.der"), include_bytes!("testdata/cert-wapo.1.der")],
     )
     .bench(100)
 }
@@ -188,27 +179,18 @@ struct Context {
 impl Context {
     fn new(name: &'static str, domain: &'static str, certs: &[&'static [u8]]) -> Self {
         let mut roots = anchors::RootCertStore::empty();
-        roots.add_server_trust_anchors(
-            webpki_roots::TLS_SERVER_ROOTS
-                .0
-                .iter()
-                .map(|ta| {
-                    OwnedTrustAnchor::from_subject_spki_name_constraints(
-                        ta.subject,
-                        ta.spki,
-                        ta.name_constraints,
-                    )
-                }),
-        );
+        roots.add_server_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|ta| {
+            OwnedTrustAnchor::from_subject_spki_name_constraints(
+                ta.subject,
+                ta.spki,
+                ta.name_constraints,
+            )
+        }));
         Self {
             name,
             domain,
             roots,
-            chain: certs
-                .iter()
-                .copied()
-                .map(|bytes| key::Certificate(bytes.to_vec()))
-                .collect(),
+            chain: certs.iter().copied().map(|bytes| key::Certificate(bytes.to_vec())).collect(),
             now: SystemTime::UNIX_EPOCH + Duration::from_secs(1640870720),
         }
     }

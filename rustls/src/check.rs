@@ -45,11 +45,7 @@ pub(crate) fn inappropriate_message(
     payload: &MessagePayload,
     content_types: &[ContentType],
 ) -> Error {
-    warn!(
-        "Received a {:?} message while expecting {:?}",
-        payload.content_type(),
-        content_types
-    );
+    warn!("Received a {:?} message while expecting {:?}", payload.content_type(), content_types);
     Error::InappropriateMessage {
         expect_types: content_types.to_vec(),
         got_type: payload.content_type(),

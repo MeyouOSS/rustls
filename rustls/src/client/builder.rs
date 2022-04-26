@@ -76,10 +76,7 @@ impl ConfigBuilder<ClientConfig, WantsTransparencyPolicyOrClientCert> {
         logs: &'static [&'static sct::Log],
         validation_deadline: SystemTime,
     ) -> ConfigBuilder<ClientConfig, WantsClientCert> {
-        self.with_logs(Some(CertificateTransparencyPolicy::new(
-            logs,
-            validation_deadline,
-        )))
+        self.with_logs(Some(CertificateTransparencyPolicy::new(logs, validation_deadline)))
     }
 
     /// Sets a single certificate chain and matching private key for use
@@ -94,14 +91,12 @@ impl ConfigBuilder<ClientConfig, WantsTransparencyPolicyOrClientCert> {
         cert_chain: Vec<key::Certificate>,
         key_der: key::PrivateKey,
     ) -> Result<ClientConfig, Error> {
-        self.with_logs(None)
-            .with_single_cert(cert_chain, key_der)
+        self.with_logs(None).with_single_cert(cert_chain, key_der)
     }
 
     /// Do not support client auth.
     pub fn with_no_client_auth(self) -> ClientConfig {
-        self.with_logs(None)
-            .with_client_cert_resolver(Arc::new(handy::FailResolveClientCert {}))
+        self.with_logs(None).with_client_cert_resolver(Arc::new(handy::FailResolveClientCert {}))
     }
 
     /// Sets a custom [`ResolvesClientCert`].
@@ -109,8 +104,7 @@ impl ConfigBuilder<ClientConfig, WantsTransparencyPolicyOrClientCert> {
         self,
         client_auth_cert_resolver: Arc<dyn ResolvesClientCert>,
     ) -> ClientConfig {
-        self.with_logs(None)
-            .with_client_cert_resolver(client_auth_cert_resolver)
+        self.with_logs(None).with_client_cert_resolver(client_auth_cert_resolver)
     }
 
     fn with_logs(
@@ -122,10 +116,7 @@ impl ConfigBuilder<ClientConfig, WantsTransparencyPolicyOrClientCert> {
                 cipher_suites: self.state.cipher_suites,
                 kx_groups: self.state.kx_groups,
                 versions: self.state.versions,
-                verifier: Arc::new(verify::WebPkiVerifier::new(
-                    self.state.root_store,
-                    ct_policy,
-                )),
+                verifier: Arc::new(verify::WebPkiVerifier::new(self.state.root_store, ct_policy)),
             },
             side: PhantomData,
         }

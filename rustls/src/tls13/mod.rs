@@ -79,10 +79,7 @@ impl Tls13CipherSuite {
         let key = derive_traffic_key(secret, self.common.aead_algorithm);
         let iv = derive_traffic_iv(secret);
 
-        Box::new(Tls13MessageEncrypter {
-            enc_key: aead::LessSafeKey::new(key),
-            iv,
-        })
+        Box::new(Tls13MessageEncrypter { enc_key: aead::LessSafeKey::new(key), iv })
     }
 
     /// Derive a `MessageDecrypter` object from the concerned TLS 1.3
@@ -91,17 +88,12 @@ impl Tls13CipherSuite {
         let key = derive_traffic_key(secret, self.common.aead_algorithm);
         let iv = derive_traffic_iv(secret);
 
-        Box::new(Tls13MessageDecrypter {
-            dec_key: aead::LessSafeKey::new(key),
-            iv,
-        })
+        Box::new(Tls13MessageDecrypter { dec_key: aead::LessSafeKey::new(key), iv })
     }
 
     /// Which hash function to use with this suite.
     pub fn hash_algorithm(&self) -> &'static ring::digest::Algorithm {
-        self.hkdf_algorithm
-            .hmac_algorithm()
-            .digest_algorithm()
+        self.hkdf_algorithm.hmac_algorithm().digest_algorithm()
     }
 
     /// Can a session using suite self resume from suite prev?
@@ -195,11 +187,8 @@ impl MessageDecrypter for Tls13MessageDecrypter {
 
         let nonce = make_nonce(&self.iv, seq);
         let aad = make_tls13_aad(payload.len());
-        let plain_len = self
-            .dec_key
-            .open_in_place(nonce, aad, payload)
-            .map_err(|_| Error::DecryptError)?
-            .len();
+        let plain_len =
+            self.dec_key.open_in_place(nonce, aad, payload).map_err(|_| Error::DecryptError)?.len();
 
         payload.truncate(plain_len);
 

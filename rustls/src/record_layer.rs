@@ -53,10 +53,7 @@ impl RecordLayer {
     }
 
     pub(crate) fn doing_trial_decryption(&mut self, requested: usize) -> bool {
-        match self
-            .trial_decryption_len
-            .and_then(|value| value.checked_sub(requested))
-        {
+        match self.trial_decryption_len.and_then(|value| value.checked_sub(requested)) {
             Some(remaining) => {
                 self.trial_decryption_len = Some(remaining);
                 true
@@ -159,9 +156,7 @@ impl RecordLayer {
     pub(crate) fn decrypt_incoming(&mut self, encr: OpaqueMessage) -> Result<PlainMessage, Error> {
         debug_assert!(self.is_decrypting());
         let seq = self.read_seq;
-        let msg = self
-            .message_decrypter
-            .decrypt(encr, seq)?;
+        let msg = self.message_decrypter.decrypt(encr, seq)?;
         self.read_seq += 1;
         Ok(msg)
     }
@@ -175,8 +170,6 @@ impl RecordLayer {
         assert!(!self.encrypt_exhausted());
         let seq = self.write_seq;
         self.write_seq += 1;
-        self.message_encrypter
-            .encrypt(plain, seq)
-            .unwrap()
+        self.message_encrypter.encrypt(plain, seq).unwrap()
     }
 }

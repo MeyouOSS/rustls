@@ -28,10 +28,7 @@ pub(crate) struct AesGcm;
 
 impl Tls12AeadAlgorithm for AesGcm {
     fn decrypter(&self, dec_key: aead::LessSafeKey, dec_iv: &[u8]) -> Box<dyn MessageDecrypter> {
-        let mut ret = GcmMessageDecrypter {
-            dec_key,
-            dec_salt: [0u8; 4],
-        };
+        let mut ret = GcmMessageDecrypter { dec_key, dec_salt: [0u8; 4] };
 
         debug_assert_eq!(dec_iv.len(), 4);
         ret.dec_salt.copy_from_slice(dec_iv);
@@ -66,10 +63,7 @@ pub(crate) struct ChaCha20Poly1305;
 
 impl Tls12AeadAlgorithm for ChaCha20Poly1305 {
     fn decrypter(&self, dec_key: aead::LessSafeKey, iv: &[u8]) -> Box<dyn MessageDecrypter> {
-        Box::new(ChaCha20Poly1305MessageDecrypter {
-            dec_key,
-            dec_offset: Iv::copy(iv),
-        })
+        Box::new(ChaCha20Poly1305MessageDecrypter { dec_key, dec_offset: Iv::copy(iv) })
     }
 
     fn encrypter(
@@ -78,10 +72,7 @@ impl Tls12AeadAlgorithm for ChaCha20Poly1305 {
         enc_iv: &[u8],
         _: &[u8],
     ) -> Box<dyn MessageEncrypter> {
-        Box::new(ChaCha20Poly1305MessageEncrypter {
-            enc_key,
-            enc_offset: Iv::copy(enc_iv),
-        })
+        Box::new(ChaCha20Poly1305MessageEncrypter { enc_key, enc_offset: Iv::copy(enc_iv) })
     }
 }
 
@@ -156,11 +147,7 @@ impl MessageEncrypter for GcmMessageEncrypter {
             .map(|tag| payload.extend(tag.as_ref()))
             .map_err(|_| Error::General("encrypt failed".to_string()))?;
 
-        Ok(OpaqueMessage {
-            typ: msg.typ,
-            version: msg.version,
-            payload: Payload::new(payload),
-        })
+        Ok(OpaqueMessage { typ: msg.typ, version: msg.version, payload: Payload::new(payload) })
     }
 }
 
@@ -191,18 +178,11 @@ impl MessageDecrypter for ChaCha20Poly1305MessageDecrypter {
         }
 
         let nonce = make_nonce(&self.dec_offset, seq);
-        let aad = make_tls12_aad(
-            seq,
-            msg.typ,
-            msg.version,
-            payload.len() - CHACHAPOLY1305_OVERHEAD,
-        );
+        let aad =
+            make_tls12_aad(seq, msg.typ, msg.version, payload.len() - CHACHAPOLY1305_OVERHEAD);
 
-        let plain_len = self
-            .dec_key
-            .open_in_place(nonce, aad, payload)
-            .map_err(|_| Error::DecryptError)?
-            .len();
+        let plain_len =
+            self.dec_key.open_in_place(nonce, aad, payload).map_err(|_| Error::DecryptError)?.len();
 
         if plain_len > MAX_FRAGMENT_LEN {
             return Err(Error::PeerSentOversizedRecord);
@@ -226,10 +206,6 @@ impl MessageEncrypter for ChaCha20Poly1305MessageEncrypter {
             .seal_in_place_append_tag(nonce, aad, &mut buf)
             .map_err(|_| Error::General("encrypt failed".to_string()))?;
 
-        Ok(OpaqueMessage {
-            typ: msg.typ,
-            version: msg.version,
-            payload: Payload::new(buf),
-        })
+        Ok(OpaqueMessage { typ: msg.typ, version: msg.version, payload: Payload::new(buf) })
     }
 }

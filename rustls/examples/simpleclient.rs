@@ -17,18 +17,13 @@ use rustls::{OwnedTrustAnchor, RootCertStore};
 
 fn main() {
     let mut root_store = RootCertStore::empty();
-    root_store.add_server_trust_anchors(
-        webpki_roots::TLS_SERVER_ROOTS
-            .0
-            .iter()
-            .map(|ta| {
-                OwnedTrustAnchor::from_subject_spki_name_constraints(
-                    ta.subject,
-                    ta.spki,
-                    ta.name_constraints,
-                )
-            }),
-    );
+    root_store.add_server_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|ta| {
+        OwnedTrustAnchor::from_subject_spki_name_constraints(
+            ta.subject,
+            ta.spki,
+            ta.name_constraints,
+        )
+    }));
     let config = rustls::ClientConfig::builder()
         .with_safe_defaults()
         .with_root_certificates(root_store)
@@ -49,16 +44,8 @@ fn main() {
         .as_bytes(),
     )
     .unwrap();
-    let ciphersuite = tls
-        .conn
-        .negotiated_cipher_suite()
-        .unwrap();
-    writeln!(
-        &mut std::io::stderr(),
-        "Current ciphersuite: {:?}",
-        ciphersuite.suite()
-    )
-    .unwrap();
+    let ciphersuite = tls.conn.negotiated_cipher_suite().unwrap();
+    writeln!(&mut std::io::stderr(), "Current ciphersuite: {:?}", ciphersuite.suite()).unwrap();
     let mut plaintext = Vec::new();
     tls.read_to_end(&mut plaintext).unwrap();
     stdout().write_all(&plaintext).unwrap();

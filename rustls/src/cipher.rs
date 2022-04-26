@@ -72,12 +72,9 @@ pub(crate) fn make_nonce(iv: &Iv, seq: u64) -> ring::aead::Nonce {
     let mut nonce = [0u8; ring::aead::NONCE_LEN];
     codec::put_u64(seq, &mut nonce[4..]);
 
-    nonce
-        .iter_mut()
-        .zip(iv.0.iter())
-        .for_each(|(nonce, iv)| {
-            *nonce ^= *iv;
-        });
+    nonce.iter_mut().zip(iv.0.iter()).for_each(|(nonce, iv)| {
+        *nonce ^= *iv;
+    });
 
     aead::Nonce::assume_unique_for_key(nonce)
 }

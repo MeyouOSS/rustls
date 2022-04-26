@@ -80,8 +80,7 @@ mod client_hello {
             trace!("ecpoints {:?}", ecpoints_ext);
 
             if !ecpoints_ext.contains(&ECPointFormat::Uncompressed) {
-                cx.common
-                    .send_fatal_alert(AlertDescription::IllegalParameter);
+                cx.common.send_fatal_alert(AlertDescription::IllegalParameter);
                 return Err(Error::PeerIncompatibleError(
                     "client didn't support uncompressed ec points".to_string(),
                 ));
@@ -129,9 +128,7 @@ mod client_hello {
                         return None;
                     }
 
-                    self.config
-                        .session_storage
-                        .get(&client_hello.session_id.get_encoding())
+                    self.config.session_storage.get(&client_hello.session_id.get_encoding())
                 })
                 .and_then(|x| persist::ServerSessionValue::read_bytes(&x))
                 .filter(|resumedata| {
@@ -143,9 +140,7 @@ mod client_hello {
             }
 
             // Now we have chosen a ciphersuite, we can make kx decisions.
-            let sigschemes = self
-                .suite
-                .resolve_sig_schemes(&sigschemes_ext);
+            let sigschemes = self.suite.resolve_sig_schemes(&sigschemes_ext);
 
             if sigschemes.is_empty() {
                 return Err(hs::incompatible(cx.common, "no overlapping sigschemes"));
@@ -242,9 +237,7 @@ mod client_hello {
             debug!("Resuming connection");
 
             if resumedata.extended_ms && !self.using_ems {
-                return Err(cx
-                    .common
-                    .illegal_param("refusing to resume without ems"));
+                return Err(cx.common.illegal_param("refusing to resume without ems"));
             }
 
             self.session_id = *id;
@@ -273,8 +266,7 @@ mod client_hello {
                 &secrets.randoms.client,
                 &secrets.master_secret,
             );
-            cx.common
-                .start_encryption_tls12(&secrets, Side::Server);
+            cx.common.start_encryption_tls12(&secrets, Side::Server);
             cx.common.peer_certificates = resumedata.client_cert_chain;
 
             if self.send_ticket {
@@ -287,9 +279,7 @@ mod client_hello {
                 )?;
             }
             emit_ccs(cx.common);
-            cx.common
-                .record_layer
-                .start_encrypting();
+            cx.common.record_layer.start_encrypting();
             emit_finished(&secrets, &mut self.transcript, cx.common);
 
             Ok(Box::new(ExpectCcs {
@@ -319,15 +309,7 @@ mod client_hello {
         extra_exts: Vec<ServerExtension>,
     ) -> Result<bool, Error> {
         let mut ep = hs::ExtensionProcessing::new();
-        ep.process_common(
-            config,
-            cx,
-            ocsp_response,
-            sct_list,
-            hello,
-            resumedata,
-            extra_exts,
-        )?;
+        ep.process_common(config, cx, ocsp_response, sct_list, hello, resumedata, extra_exts)?;
         ep.process_tls12(config, hello, using_ems);
 
         let sh = Message {
@@ -436,20 +418,14 @@ mod client_hello {
 
         let verify_schemes = client_auth.supported_verify_schemes();
 
-        let names = client_auth
-            .client_auth_root_subjects()
-            .ok_or_else(|| {
-                debug!("could not determine root subjects based on SNI");
-                cx.common
-                    .send_fatal_alert(AlertDescription::AccessDenied);
-                Error::General("client rejected by client_auth_root_subjects".into())
-            })?;
+        let names = client_auth.client_auth_root_subjects().ok_or_else(|| {
+            debug!("could not determine root subjects based on SNI");
+            cx.common.send_fatal_alert(AlertDescription::AccessDenied);
+            Error::General("client rejected by client_auth_root_subjects".into())
+        })?;
 
         let cr = CertificateRequestPayload {
-            certtypes: vec![
-                ClientCertificateType::RSASign,
-                ClientCertificateType::ECDSASign,
-            ],
+            certtypes: vec![ClientCertificateType::RSASign, ClientCertificateType::ECDSASign],
             sigschemes: verify_schemes,
             canames: names,
         };
@@ -504,23 +480,17 @@ impl State<ServerConnectionData> for ExpectCertificate {
         )?;
 
         // If we can't determine if the auth is mandatory, abort
-        let mandatory = self
-            .config
-            .verifier
-            .client_auth_mandatory()
-            .ok_or_else(|| {
-                debug!("could not determine if client auth is mandatory based on SNI");
-                cx.common
-                    .send_fatal_alert(AlertDescription::AccessDenied);
-                Error::General("client rejected by client_auth_mandatory".into())
-            })?;
+        let mandatory = self.config.verifier.client_auth_mandatory().ok_or_else(|| {
+            debug!("could not determine if client auth is mandatory based on SNI");
+            cx.common.send_fatal_alert(AlertDescription::AccessDenied);
+            Error::General("client rejected by client_auth_mandatory".into())
+        })?;
 
         trace!("certs {:?}", cert_chain);
 
         let client_cert = match cert_chain.split_first() {
             None if mandatory => {
-                cx.common
-                    .send_fatal_alert(AlertDescription::CertificateRequired);
+                cx.common.send_fatal_alert(AlertDescription::CertificateRequired);
                 return Err(Error::NoCertificatesPresented);
             }
             None => {
@@ -530,13 +500,12 @@ impl State<ServerConnectionData> for ExpectCertificate {
             }
             Some((end_entity, intermediates)) => {
                 let now = std::time::SystemTime::now();
-                self.config
-                    .verifier
-                    .verify_client_cert(end_entity, intermediates, now)
-                    .map_err(|err| {
+                self.config.verifier.verify_client_cert(end_entity, intermediates, now).map_err(
+                    |err| {
                         hs::incompatible(cx.common, "certificate invalid");
                         err
-                    })?;
+                    },
+                )?;
 
                 Some(cert_chain)
             }
@@ -577,9 +546,7 @@ impl State<ServerConnectionData> for ExpectClientKx {
             HandshakePayload::ClientKeyExchange
         )?;
         self.transcript.add_message(&m);
-        let ems_seed = self
-            .using_ems
-            .then(|| self.transcript.get_current_hash());
+        let ems_seed = self.using_ems.then(|| self.transcript.get_current_hash());
 
         // Complete key agreement, and set up encryption with the
         // resulting premaster secret.
@@ -593,13 +560,8 @@ impl State<ServerConnectionData> for ExpectClientKx {
             self.suite,
         )?;
 
-        self.config.key_log.log(
-            "CLIENT_RANDOM",
-            &secrets.randoms.client,
-            &secrets.master_secret,
-        );
-        cx.common
-            .start_encryption_tls12(&secrets, Side::Server);
+        self.config.key_log.log("CLIENT_RANDOM", &secrets.randoms.client, &secrets.master_secret);
+        cx.common.start_encryption_tls12(&secrets, Side::Server);
 
         if let Some(client_cert) = self.client_cert {
             Ok(Box::new(ExpectCertificateVerify {
@@ -648,9 +610,7 @@ impl State<ServerConnectionData> for ExpectCertificateVerify {
             match self.transcript.take_handshake_buf() {
                 Some(msgs) => {
                     let certs = &self.client_cert;
-                    self.config
-                        .verifier
-                        .verify_tls12_signature(&msgs, &certs[0], sig)
+                    self.config.verifier.verify_tls12_signature(&msgs, &certs[0], sig)
                 }
                 None => {
                     // This should be unreachable; the handshake buffer was initialized with
@@ -658,16 +618,14 @@ impl State<ServerConnectionData> for ExpectCertificateVerify {
                     // `transcript.abandon_client_auth()` can extract it, but its only caller in
                     // this flow will also set `ExpectClientKx::client_cert` to `None`, making it
                     // impossible to reach this state.
-                    cx.common
-                        .send_fatal_alert(AlertDescription::AccessDenied);
+                    cx.common.send_fatal_alert(AlertDescription::AccessDenied);
                     Err(Error::General("client authentication not set up".into()))
                 }
             }
         };
 
         if let Err(e) = rc {
-            cx.common
-                .send_fatal_alert(AlertDescription::AccessDenied);
+            cx.common.send_fatal_alert(AlertDescription::AccessDenied);
             return Err(e);
         }
 
@@ -703,10 +661,7 @@ impl State<ServerConnectionData> for ExpectCcs {
         match m.payload {
             MessagePayload::ChangeCipherSpec(..) => {}
             payload => {
-                return Err(inappropriate_message(
-                    &payload,
-                    &[ContentType::ChangeCipherSpec],
-                ))
+                return Err(inappropriate_message(&payload, &[ContentType::ChangeCipherSpec]))
             }
         }
 
@@ -714,9 +669,7 @@ impl State<ServerConnectionData> for ExpectCcs {
         // message.
         cx.common.check_aligned_handshake()?;
 
-        cx.common
-            .record_layer
-            .start_decrypting();
+        cx.common.record_layer.start_decrypting();
         Ok(Box::new(ExpectFinished {
             config: self.config,
             secrets: self.secrets,
@@ -770,9 +723,7 @@ fn emit_ticket(
 
     // If we can't produce a ticket for some reason, we can't
     // report an error. Send an empty one.
-    let ticket = ticketer
-        .encrypt(&plain)
-        .unwrap_or_default();
+    let ticket = ticketer.encrypt(&plain).unwrap_or_default();
     let ticket_lifetime = ticketer.lifetime();
 
     let m = Message {
@@ -844,8 +795,7 @@ impl State<ServerConnectionData> for ExpectFinished {
         let _fin_verified =
             constant_time::verify_slices_are_equal(&expect_verify_data, &finished.0)
                 .map_err(|_| {
-                    cx.common
-                        .send_fatal_alert(AlertDescription::DecryptError);
+                    cx.common.send_fatal_alert(AlertDescription::DecryptError);
                     Error::DecryptError
                 })
                 .map(|_| verify::FinishedMessageVerified::assertion())?;
@@ -880,17 +830,12 @@ impl State<ServerConnectionData> for ExpectFinished {
                 )?;
             }
             emit_ccs(cx.common);
-            cx.common
-                .record_layer
-                .start_encrypting();
+            cx.common.record_layer.start_encrypting();
             emit_finished(&self.secrets, &mut self.transcript, cx.common);
         }
 
         cx.common.start_traffic();
-        Ok(Box::new(ExpectTraffic {
-            secrets: self.secrets,
-            _fin_verified,
-        }))
+        Ok(Box::new(ExpectTraffic { secrets: self.secrets, _fin_verified }))
     }
 }
 
@@ -905,14 +850,9 @@ impl ExpectTraffic {}
 impl State<ServerConnectionData> for ExpectTraffic {
     fn handle(self: Box<Self>, cx: &mut ServerContext<'_>, m: Message) -> hs::NextStateOrError {
         match m.payload {
-            MessagePayload::ApplicationData(payload) => cx
-                .common
-                .take_received_plaintext(payload),
+            MessagePayload::ApplicationData(payload) => cx.common.take_received_plaintext(payload),
             payload => {
-                return Err(inappropriate_message(
-                    &payload,
-                    &[ContentType::ApplicationData],
-                ));
+                return Err(inappropriate_message(&payload, &[ContentType::ApplicationData]));
             }
         }
         Ok(self)
@@ -924,8 +864,7 @@ impl State<ServerConnectionData> for ExpectTraffic {
         label: &[u8],
         context: Option<&[u8]>,
     ) -> Result<(), Error> {
-        self.secrets
-            .export_keying_material(output, label, context);
+        self.secrets.export_keying_material(output, label, context);
         Ok(())
     }
 }

@@ -42,9 +42,7 @@ impl MessagePayload {
             _ => None,
         };
 
-        parsed
-            .filter(|_| !r.any_left())
-            .ok_or_else(|| Error::corrupt_message(typ))
+        parsed.filter(|_| !r.any_left()).ok_or_else(|| Error::corrupt_message(typ))
     }
 
     pub fn content_type(&self) -> ContentType {
@@ -102,16 +100,10 @@ impl OpaqueMessage {
             _ => {}
         };
 
-        let mut sub = r
-            .sub(len as usize)
-            .ok_or(MessageError::TooShortForLength)?;
+        let mut sub = r.sub(len as usize).ok_or(MessageError::TooShortForLength)?;
         let payload = Payload::read(&mut sub);
 
-        Ok(Self {
-            typ,
-            version,
-            payload,
-        })
+        Ok(Self { typ, version, payload })
     }
 
     pub fn encode(self) -> Vec<u8> {
@@ -128,11 +120,7 @@ impl OpaqueMessage {
     /// This should only be used for messages that are known to be in plaintext. Otherwise, the
     /// `OpaqueMessage` should be decrypted into a `PlainMessage` using a `MessageDecrypter`.
     pub fn into_plain_message(self) -> PlainMessage {
-        PlainMessage {
-            version: self.version,
-            typ: self.typ,
-            payload: self.payload,
-        }
+        PlainMessage { version: self.version, typ: self.typ, payload: self.payload }
     }
 
     /// This is the maximum on-the-wire size of a TLSCiphertext.
@@ -159,11 +147,7 @@ impl From<Message> for PlainMessage {
             }
         };
 
-        Self {
-            typ,
-            version: msg.version,
-            payload,
-        }
+        Self { typ, version: msg.version, payload }
     }
 }
 
@@ -180,19 +164,11 @@ pub struct PlainMessage {
 
 impl PlainMessage {
     pub fn into_unencrypted_opaque(self) -> OpaqueMessage {
-        OpaqueMessage {
-            version: self.version,
-            typ: self.typ,
-            payload: self.payload,
-        }
+        OpaqueMessage { version: self.version, typ: self.typ, payload: self.payload }
     }
 
     pub fn borrow(&self) -> BorrowedPlainMessage<'_> {
-        BorrowedPlainMessage {
-            version: self.version,
-            typ: self.typ,
-            payload: &self.payload.0,
-        }
+        BorrowedPlainMessage { version: self.version, typ: self.typ, payload: &self.payload.0 }
     }
 }
 
@@ -216,10 +192,7 @@ impl Message {
     pub fn build_alert(level: AlertLevel, desc: AlertDescription) -> Self {
         Self {
             version: ProtocolVersion::TLSv1_2,
-            payload: MessagePayload::Alert(AlertMessagePayload {
-                level,
-                description: desc,
-            }),
+            payload: MessagePayload::Alert(AlertMessagePayload { level, description: desc }),
         }
     }
 

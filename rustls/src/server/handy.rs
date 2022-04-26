@@ -38,27 +38,18 @@ impl ServerSessionMemoryCache {
     /// number of stored sessions, and may be rounded-up for
     /// efficiency.
     pub fn new(size: usize) -> Arc<Self> {
-        Arc::new(Self {
-            cache: Mutex::new(limited_cache::LimitedCache::new(size)),
-        })
+        Arc::new(Self { cache: Mutex::new(limited_cache::LimitedCache::new(size)) })
     }
 }
 
 impl server::StoresServerSessions for ServerSessionMemoryCache {
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> bool {
-        self.cache
-            .lock()
-            .unwrap()
-            .insert(key, value);
+        self.cache.lock().unwrap().insert(key, value);
         true
     }
 
     fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
-        self.cache
-            .lock()
-            .unwrap()
-            .get(key)
-            .cloned()
+        self.cache.lock().unwrap().get(key).cloned()
     }
 
     fn take(&self, key: &[u8]) -> Option<Vec<u8>> {
@@ -144,9 +135,7 @@ pub struct ResolvesServerCertUsingSni {
 impl ResolvesServerCertUsingSni {
     /// Create a new and empty (i.e., knows no certificates) resolver.
     pub fn new() -> Self {
-        Self {
-            by_name: collections::HashMap::new(),
-        }
+        Self { by_name: collections::HashMap::new() }
     }
 
     /// Add a new `sign::CertifiedKey` to be used for the given SNI `name`.
@@ -161,8 +150,7 @@ impl ResolvesServerCertUsingSni {
 
         ck.cross_check_end_entity_cert(Some(checked_name.as_ref()))?;
         let as_str: &str = checked_name.as_ref().into();
-        self.by_name
-            .insert(as_str.to_string(), Arc::new(ck));
+        self.by_name.insert(as_str.to_string(), Arc::new(ck));
         Ok(())
     }
 }
@@ -260,19 +248,13 @@ mod test {
     #[test]
     fn test_resolvesservercertusingsni_requires_sni() {
         let rscsni = ResolvesServerCertUsingSni::new();
-        assert!(rscsni
-            .resolve(ClientHello::new(&None, &[], None, &[]))
-            .is_none());
+        assert!(rscsni.resolve(ClientHello::new(&None, &[], None, &[])).is_none());
     }
 
     #[test]
     fn test_resolvesservercertusingsni_handles_unknown_name() {
         let rscsni = ResolvesServerCertUsingSni::new();
-        let name = webpki::DnsNameRef::try_from_ascii_str("hello.com")
-            .unwrap()
-            .to_owned();
-        assert!(rscsni
-            .resolve(ClientHello::new(&Some(name), &[], None, &[]))
-            .is_none());
+        let name = webpki::DnsNameRef::try_from_ascii_str("hello.com").unwrap().to_owned();
+        assert!(rscsni.resolve(ClientHello::new(&Some(name), &[], None, &[])).is_none());
     }
 }

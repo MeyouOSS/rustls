@@ -10,11 +10,7 @@ pub(super) struct ActiveCertifiedKey<'a> {
 
 impl<'a> ActiveCertifiedKey<'a> {
     pub(super) fn from_certified_key(key: &sign::CertifiedKey) -> ActiveCertifiedKey {
-        ActiveCertifiedKey {
-            key,
-            ocsp: key.ocsp.as_deref(),
-            sct_list: key.sct_list.as_deref(),
-        }
+        ActiveCertifiedKey { key, ocsp: key.ocsp.as_deref(), sct_list: key.sct_list.as_deref() }
     }
 
     /// Get the certificate chain

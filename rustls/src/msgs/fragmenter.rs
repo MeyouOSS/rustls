@@ -54,11 +54,7 @@ impl MessageFragmenter {
         out: &mut VecDeque<BorrowedPlainMessage<'a>>,
     ) {
         for chunk in payload.chunks(self.max_frag) {
-            let cm = BorrowedPlainMessage {
-                typ,
-                version,
-                payload: chunk,
-            };
+            let cm = BorrowedPlainMessage { typ, version, payload: chunk };
             out.push_back(cm);
         }
     }
@@ -89,10 +85,7 @@ mod tests {
         bytes: &[u8],
     ) {
         let m = mm.unwrap();
-        let buf = m
-            .clone()
-            .into_unencrypted_opaque()
-            .encode();
+        let buf = m.clone().into_unencrypted_opaque().encode();
 
         assert_eq!(&m.typ, typ);
         assert_eq!(&m.version, version);
@@ -106,11 +99,7 @@ mod tests {
         let typ = ContentType::Handshake;
         let version = ProtocolVersion::TLSv1_2;
         let data: Vec<u8> = (1..70u8).collect();
-        let m = PlainMessage {
-            typ,
-            version,
-            payload: Payload::new(data),
-        };
+        let m = PlainMessage { typ, version, payload: Payload::new(data) };
 
         let frag = MessageFragmenter::new(Some(32)).unwrap();
         let mut q = VecDeque::new();

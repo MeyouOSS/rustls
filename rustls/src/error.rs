@@ -125,29 +125,19 @@ impl Error {
 }
 
 fn join<T: fmt::Debug>(items: &[T]) -> String {
-    items
-        .iter()
-        .map(|x| format!("{:?}", x))
-        .collect::<Vec<String>>()
-        .join(" or ")
+    items.iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>().join(" or ")
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Self::InappropriateMessage {
-                ref expect_types,
-                ref got_type,
-            } => write!(
+            Self::InappropriateMessage { ref expect_types, ref got_type } => write!(
                 f,
                 "received unexpected message: got {:?} when expecting {}",
                 got_type,
                 join::<ContentType>(expect_types)
             ),
-            Self::InappropriateHandshakeMessage {
-                ref expect_types,
-                ref got_type,
-            } => write!(
+            Self::InappropriateHandshakeMessage { ref expect_types, ref got_type } => write!(
                 f,
                 "received unexpected handshake message: got {:?} when expecting {}",
                 got_type,
@@ -264,9 +254,7 @@ mod tests {
     fn time_error_mapping() {
         use std::time::SystemTime;
 
-        let time_error = SystemTime::UNIX_EPOCH
-            .duration_since(SystemTime::now())
-            .unwrap_err();
+        let time_error = SystemTime::UNIX_EPOCH.duration_since(SystemTime::now()).unwrap_err();
         let err: Error = time_error.into();
         assert_eq!(err, Error::FailedToGetCurrentTime);
     }

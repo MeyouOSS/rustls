@@ -40,17 +40,11 @@ impl Codec for ClientSessionKey {
 
 impl ClientSessionKey {
     pub fn session_for_server_name(server_name: &ServerName) -> Self {
-        Self {
-            kind: b"session",
-            name: server_name.encode(),
-        }
+        Self { kind: b"session", name: server_name.encode() }
     }
 
     pub fn hint_for_server_name(server_name: &ServerName) -> Self {
-        Self {
-            kind: b"kx-hint",
-            name: server_name.encode(),
-        }
+        Self { kind: b"kx-hint", name: server_name.encode() }
     }
 }
 
@@ -67,10 +61,7 @@ impl ClientSessionValue {
         suite: CipherSuite,
         supported: &[SupportedCipherSuite],
     ) -> Option<Self> {
-        match supported
-            .iter()
-            .find(|s| s.suite() == suite)?
-        {
+        match supported.iter().find(|s| s.suite() == suite)? {
             SupportedCipherSuite::Tls13(inner) => {
                 Tls13ClientSessionValue::read(inner, reader).map(ClientSessionValue::Tls13)
             }
@@ -110,19 +101,13 @@ pub struct Retrieved<T> {
 
 impl<T> Retrieved<T> {
     pub fn new(value: T, retrieved_at: TimeBase) -> Self {
-        Self {
-            value,
-            retrieved_at,
-        }
+        Self { value, retrieved_at }
     }
 }
 
 impl Retrieved<&Tls13ClientSessionValue> {
     pub fn obfuscated_ticket_age(&self) -> u32 {
-        let age_secs = self
-            .retrieved_at
-            .as_secs()
-            .saturating_sub(self.value.common.epoch);
+        let age_secs = self.retrieved_at.as_secs().saturating_sub(self.value.common.epoch);
         let age_millis = age_secs as u32 * 1000;
         age_millis.wrapping_add(self.value.age_add)
     }
@@ -203,13 +188,9 @@ impl Tls13ClientSessionValue {
     /// (See `read()` for why this is inherent here.)
     pub fn get_encoding(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(16);
-        self.suite
-            .common
-            .suite
-            .encode(&mut bytes);
+        self.suite.common.suite.encode(&mut bytes);
         self.age_add.encode(&mut bytes);
-        self.max_early_data_size
-            .encode(&mut bytes);
+        self.max_early_data_size.encode(&mut bytes);
         self.common.encode(&mut bytes);
         bytes
     }
@@ -284,10 +265,7 @@ impl Tls12ClientSessionValue {
     /// (See `read()` for why this is inherent here.)
     pub fn get_encoding(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(16);
-        self.suite
-            .common
-            .suite
-            .encode(&mut bytes);
+        self.suite.common.suite.encode(&mut bytes);
         self.session_id.encode(&mut bytes);
         (if self.extended_ms { 1u8 } else { 0u8 }).encode(&mut bytes);
         self.common.encode(&mut bytes);
@@ -437,8 +415,7 @@ impl Codec for ServerSessionValue {
         }
         self.application_data.encode(bytes);
         self.creation_time_sec.encode(bytes);
-        self.age_obfuscation_offset
-            .encode(bytes);
+        self.age_obfuscation_offset.encode(bytes);
     }
 
     fn read(r: &mut Reader) -> Option<Self> {
@@ -455,17 +432,9 @@ impl Codec for ServerSessionValue {
         let ms = PayloadU8::read(r)?;
         let ems = u8::read(r)?;
         let has_ccert = u8::read(r)? == 1;
-        let ccert = if has_ccert {
-            Some(CertificatePayload::read(r)?)
-        } else {
-            None
-        };
+        let ccert = if has_ccert { Some(CertificatePayload::read(r)?) } else { None };
         let has_alpn = u8::read(r)? == 1;
-        let alpn = if has_alpn {
-            Some(PayloadU8::read(r)?)
-        } else {
-            None
-        };
+        let alpn = if has_alpn { Some(PayloadU8::read(r)?) } else { None };
         let application_data = PayloadU16::read(r)?;
         let creation_time_sec = u64::read(r)?;
         let age_obfuscation_offset = u32::read(r)?;
@@ -519,10 +488,8 @@ impl ServerSessionValue {
 
     pub fn set_freshness(mut self, obfuscated_client_age_ms: u32, time_now: TimeBase) -> Self {
         let client_age_ms = obfuscated_client_age_ms.wrapping_sub(self.age_obfuscation_offset);
-        let server_age_ms = (time_now
-            .as_secs()
-            .saturating_sub(self.creation_time_sec) as u32)
-            .saturating_mul(1000);
+        let server_age_ms =
+            (time_now.as_secs().saturating_sub(self.creation_time_sec) as u32).saturating_mul(1000);
 
         let age_difference = if client_age_ms < server_age_ms {
             server_age_ms - client_age_ms

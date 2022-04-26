@@ -32,27 +32,18 @@ impl ClientSessionMemoryCache {
     /// maximum number of stored sessions.
     pub fn new(size: usize) -> Arc<Self> {
         debug_assert!(size > 0);
-        Arc::new(Self {
-            cache: Mutex::new(limited_cache::LimitedCache::new(size)),
-        })
+        Arc::new(Self { cache: Mutex::new(limited_cache::LimitedCache::new(size)) })
     }
 }
 
 impl client::StoresClientSessions for ClientSessionMemoryCache {
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> bool {
-        self.cache
-            .lock()
-            .unwrap()
-            .insert(key, value);
+        self.cache.lock().unwrap().insert(key, value);
         true
     }
 
     fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
-        self.cache
-            .lock()
-            .unwrap()
-            .get(key)
-            .cloned()
+        self.cache.lock().unwrap().get(key).cloned()
     }
 }
 

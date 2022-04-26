@@ -64,10 +64,7 @@ impl TlsClient {
     fn read_source_to_end(&mut self, rd: &mut dyn io::Read) -> io::Result<usize> {
         let mut buf = Vec::new();
         let len = rd.read_to_end(&mut buf)?;
-        self.tls_conn
-            .writer()
-            .write_all(&buf)
-            .unwrap();
+        self.tls_conn.writer().write_all(&buf).unwrap();
         Ok(len)
     }
 
@@ -115,13 +112,8 @@ impl TlsClient {
         if io_state.plaintext_bytes_to_read() > 0 {
             let mut plaintext = Vec::new();
             plaintext.resize(io_state.plaintext_bytes_to_read(), 0u8);
-            self.tls_conn
-                .reader()
-                .read_exact(&mut plaintext)
-                .unwrap();
-            io::stdout()
-                .write_all(&plaintext)
-                .unwrap();
+            self.tls_conn.reader().read_exact(&mut plaintext).unwrap();
+            io::stdout().write_all(&plaintext).unwrap();
         }
 
         // If wethat fails, the peer might have started a clean TLS-level
@@ -133,25 +125,19 @@ impl TlsClient {
     }
 
     fn do_write(&mut self) {
-        self.tls_conn
-            .write_tls(&mut self.socket)
-            .unwrap();
+        self.tls_conn.write_tls(&mut self.socket).unwrap();
     }
 
     /// Registers self as a 'listener' in mio::Registry
     fn register(&mut self, registry: &mio::Registry) {
         let interest = self.event_set();
-        registry
-            .register(&mut self.socket, CLIENT, interest)
-            .unwrap();
+        registry.register(&mut self.socket, CLIENT, interest).unwrap();
     }
 
     /// Reregisters self as a 'listener' in mio::Registry.
     fn reregister(&mut self, registry: &mio::Registry) {
         let interest = self.event_set();
-        registry
-            .reregister(&mut self.socket, CLIENT, interest)
-            .unwrap();
+        registry.reregister(&mut self.socket, CLIENT, interest).unwrap();
     }
 
     /// Use wants_read/wants_write to register for different mio-level
@@ -263,21 +249,14 @@ impl PersistCache {
 impl rustls::client::StoresClientSessions for PersistCache {
     /// put: insert into in-memory cache, and perhaps persist to disk.
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> bool {
-        self.cache
-            .lock()
-            .unwrap()
-            .insert(key, value);
+        self.cache.lock().unwrap().insert(key, value);
         self.save();
         true
     }
 
     /// get: from in-memory cache
     fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
-        self.cache
-            .lock()
-            .unwrap()
-            .get(key)
-            .cloned()
+        self.cache.lock().unwrap().get(key).cloned()
     }
 }
 
@@ -389,10 +368,7 @@ fn lookup_versions(versions: &[String]) -> Vec<&'static rustls::SupportedProtoco
         let version = match vname.as_ref() {
             "1.2" => &rustls::version::TLS12,
             "1.3" => &rustls::version::TLS13,
-            _ => panic!(
-                "cannot look up version '{}', valid are '1.2' and '1.3'",
-                vname
-            ),
+            _ => panic!("cannot look up version '{}', valid are '1.2' and '1.3'", vname),
         };
         out.push(version);
     }
@@ -424,10 +400,7 @@ fn load_private_key(filename: &str) -> rustls::PrivateKey {
         }
     }
 
-    panic!(
-        "no keys found in {:?} (encrypted keys not supported)",
-        filename
-    );
+    panic!("no keys found in {:?} (encrypted keys not supported)", filename);
 }
 
 #[cfg(feature = "dangerous_configuration")]
@@ -452,8 +425,7 @@ mod danger {
 #[cfg(feature = "dangerous_configuration")]
 fn apply_dangerous_options(args: &Args, cfg: &mut rustls::ClientConfig) {
     if args.flag_insecure {
-        cfg.dangerous()
-            .set_certificate_verifier(Arc::new(danger::NoCertificateVerification {}));
+        cfg.dangerous().set_certificate_verifier(Arc::new(danger::NoCertificateVerification {}));
     }
 }
 
@@ -475,18 +447,13 @@ fn make_config(args: &Args) -> Arc<rustls::ClientConfig> {
         let mut reader = BufReader::new(certfile);
         root_store.add_parsable_certificates(&rustls_pemfile::certs(&mut reader).unwrap());
     } else {
-        root_store.add_server_trust_anchors(
-            webpki_roots::TLS_SERVER_ROOTS
-                .0
-                .iter()
-                .map(|ta| {
-                    OwnedTrustAnchor::from_subject_spki_name_constraints(
-                        ta.subject,
-                        ta.spki,
-                        ta.name_constraints,
-                    )
-                }),
-        );
+        root_store.add_server_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|ta| {
+            OwnedTrustAnchor::from_subject_spki_name_constraints(
+                ta.subject,
+                ta.spki,
+                ta.name_constraints,
+            )
+        }));
     }
 
     let suites = if !args.flag_suite.is_empty() {
@@ -512,9 +479,7 @@ fn make_config(args: &Args) -> Arc<rustls::ClientConfig> {
         (Some(key_file), Some(certs_file)) => {
             let certs = load_certs(certs_file);
             let key = load_private_key(key_file);
-            config
-                .with_single_cert(certs, key)
-                .expect("invalid client auth certs/key")
+            config.with_single_cert(certs, key).expect("invalid client auth certs/key")
         }
         (None, None) => config.with_no_client_auth(),
         (_, _) => {
@@ -534,11 +499,7 @@ fn make_config(args: &Args) -> Arc<rustls::ClientConfig> {
 
     config.session_storage = Arc::new(PersistCache::new(&args.flag_cache));
 
-    config.alpn_protocols = args
-        .flag_proto
-        .iter()
-        .map(|proto| proto.as_bytes().to_vec())
-        .collect();
+    config.alpn_protocols = args.flag_proto.iter().map(|proto| proto.as_bytes().to_vec()).collect();
     config.max_fragment_size = args.flag_max_frag_size;
 
     apply_dangerous_options(args, &mut config);
@@ -558,9 +519,7 @@ fn main() {
         .unwrap_or_else(|e| e.exit());
 
     if args.flag_verbose {
-        env_logger::Builder::new()
-            .parse_filters("trace")
-            .init();
+        env_logger::Builder::new().parse_filters("trace").init();
     }
 
     let port = args.flag_port.unwrap_or(443);
@@ -569,11 +528,7 @@ fn main() {
     let config = make_config(&args);
 
     let sock = TcpStream::connect(addr).unwrap();
-    let server_name = args
-        .arg_hostname
-        .as_str()
-        .try_into()
-        .expect("invalid DNS name");
+    let server_name = args.arg_hostname.as_str().try_into().expect("invalid DNS name");
     let mut tlsclient = TlsClient::new(sock, server_name, config);
 
     if args.flag_http {
@@ -582,14 +537,10 @@ fn main() {
                                close\r\nAccept-Encoding: identity\r\n\r\n",
             args.arg_hostname
         );
-        tlsclient
-            .write_all(httpreq.as_bytes())
-            .unwrap();
+        tlsclient.write_all(httpreq.as_bytes()).unwrap();
     } else {
         let mut stdin = io::stdin();
-        tlsclient
-            .read_source_to_end(&mut stdin)
-            .unwrap();
+        tlsclient.read_source_to_end(&mut stdin).unwrap();
     }
 
     let mut poll = mio::Poll::new().unwrap();

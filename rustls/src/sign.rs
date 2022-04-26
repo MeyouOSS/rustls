@@ -58,12 +58,7 @@ impl CertifiedKey {
     /// The cert chain must not be empty. The first certificate in the chain
     /// must be the end-entity certificate.
     pub fn new(cert: Vec<key::Certificate>, key: Arc<dyn SigningKey>) -> Self {
-        Self {
-            cert,
-            key,
-            ocsp: None,
-            sct_list: None,
-        }
+        Self { cert, key, ocsp: None, sct_list: None }
     }
 
     /// The end-entity certificate.
@@ -84,11 +79,9 @@ impl CertifiedKey {
         name: Option<webpki::DnsNameRef>,
     ) -> Result<(), Error> {
         // Always reject an empty certificate chain.
-        let end_entity_cert = self
-            .end_entity_cert()
-            .map_err(|SignError(())| {
-                Error::General("No end-entity certificate in certificate chain".to_string())
-            })?;
+        let end_entity_cert = self.end_entity_cert().map_err(|SignError(())| {
+            Error::General("No end-entity certificate in certificate chain".to_string())
+        })?;
 
         // Reject syntactically-invalid end-entity certificates.
         let end_entity_cert =
@@ -106,10 +99,7 @@ impl CertifiedKey {
             // certificate is valid; it only validates that the name is one
             // that the certificate is valid for, if the certificate is
             // valid.
-            if end_entity_cert
-                .verify_is_valid_for_dns_name(name)
-                .is_err()
-            {
+            if end_entity_cert.verify_is_valid_for_dns_name(name).is_err() {
                 return Err(Error::General(
                     "The server certificate is not \
                                              valid for the given name"
@@ -234,11 +224,7 @@ impl RsaSigner {
             _ => unreachable!(),
         };
 
-        Box::new(Self {
-            key,
-            scheme,
-            encoding,
-        })
+        Box::new(Self { key, scheme, encoding })
     }
 }
 
@@ -286,10 +272,7 @@ impl EcdsaSigningKey {
         EcdsaKeyPair::from_pkcs8(sigalg, &der.0)
             .map_err(|_| ())
             .or_else(|_| Self::convert_sec1_to_pkcs8(scheme, sigalg, &der.0))
-            .map(|kp| Self {
-                key: Arc::new(kp),
-                scheme,
-            })
+            .map(|kp| Self { key: Arc::new(kp), scheme })
     }
 
     /// Convert a SEC1 encoding to PKCS8, and ask ring to parse it.  This
@@ -344,10 +327,7 @@ const PKCS8_PREFIX_ECDSA_NISTP384: &[u8] = b"\x02\x01\x00\
 impl SigningKey for EcdsaSigningKey {
     fn choose_scheme(&self, offered: &[SignatureScheme]) -> Option<Box<dyn Signer>> {
         if offered.contains(&self.scheme) {
-            Some(Box::new(EcdsaSigner {
-                key: Arc::clone(&self.key),
-                scheme: self.scheme,
-            }))
+            Some(Box::new(EcdsaSigner { key: Arc::clone(&self.key), scheme: self.scheme }))
         } else {
             None
         }
@@ -399,10 +379,7 @@ impl Ed25519SigningKey {
     /// expecting a key usable with precisely the given signature scheme.
     fn new(der: &key::PrivateKey, scheme: SignatureScheme) -> Result<Self, SignError> {
         Ed25519KeyPair::from_pkcs8_maybe_unchecked(&der.0)
-            .map(|kp| Self {
-                key: Arc::new(kp),
-                scheme,
-            })
+            .map(|kp| Self { key: Arc::new(kp), scheme })
             .map_err(|_| SignError(()))
     }
 }
@@ -410,10 +387,7 @@ impl Ed25519SigningKey {
 impl SigningKey for Ed25519SigningKey {
     fn choose_scheme(&self, offered: &[SignatureScheme]) -> Option<Box<dyn Signer>> {
         if offered.contains(&self.scheme) {
-            Some(Box::new(Ed25519Signer {
-                key: Arc::clone(&self.key),
-                scheme: self.scheme,
-            }))
+            Some(Box::new(Ed25519Signer { key: Arc::clone(&self.key), scheme: self.scheme }))
         } else {
             None
         }

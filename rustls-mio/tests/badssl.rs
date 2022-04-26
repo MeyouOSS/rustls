@@ -96,10 +96,7 @@ mod online {
 
     #[test]
     fn sha256() {
-        connect("sha256.badssl.com")
-            .expect("<title>sha256.badssl.com</title>")
-            .go()
-            .unwrap();
+        connect("sha256.badssl.com").expect("<title>sha256.badssl.com</title>").go().unwrap();
     }
 
     #[test]
@@ -113,10 +110,7 @@ mod online {
 
     #[test]
     fn rsa8192() {
-        connect("rsa8192.badssl.com")
-            .expect("<title>rsa8192.badssl.com</title>")
-            .go()
-            .unwrap();
+        connect("rsa8192.badssl.com").expect("<title>rsa8192.badssl.com</title>").go().unwrap();
     }
 
     #[test]

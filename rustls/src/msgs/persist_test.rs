@@ -25,9 +25,7 @@ fn clientsessionkey_cannot_be_read() {
 #[test]
 fn clientsessionvalue_is_debug() {
     let csv = ClientSessionValue::from(Tls13ClientSessionValue::new(
-        TLS13_AES_128_GCM_SHA256
-            .tls13()
-            .unwrap(),
+        TLS13_AES_128_GCM_SHA256.tls13().unwrap(),
         vec![],
         vec![1, 2, 3],
         vec![Certificate(b"abc".to_vec()), Certificate(b"def".to_vec())],

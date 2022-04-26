@@ -123,8 +123,7 @@ impl MessageDeframer {
              * 0          ^ self.used
              */
 
-            self.buf
-                .copy_within(taken..self.used, 0);
+            self.buf.copy_within(taken..self.used, 0);
             self.used -= taken;
         } else if taken == self.used {
             self.used = 0;
@@ -160,10 +159,7 @@ mod tests {
 
     impl<'a> ByteRead<'a> {
         fn new(bytes: &'a [u8]) -> Self {
-            ByteRead {
-                buf: bytes,
-                offs: 0,
-            }
+            ByteRead { buf: bytes, offs: 0 }
         }
     }
 
@@ -223,8 +219,7 @@ mod tests {
     fn input_error(d: &mut MessageDeframer) {
         let error = io::Error::from(io::ErrorKind::TimedOut);
         let mut rd = ErrorRead::new(error);
-        d.read(&mut rd)
-            .expect_err("error not propagated");
+        d.read(&mut rd).expect_err("error not propagated");
     }
 
     fn input_whole_incremental(d: &mut MessageDeframer, bytes: &[u8]) {
@@ -350,10 +345,7 @@ mod tests {
         let mut d = MessageDeframer::new();
         assert_len(3, input_bytes(&mut d, &FIRST_MESSAGE[..3]));
         input_error(&mut d);
-        assert_len(
-            FIRST_MESSAGE.len() - 3,
-            input_bytes(&mut d, &FIRST_MESSAGE[3..]),
-        );
+        assert_len(FIRST_MESSAGE.len() - 3, input_bytes(&mut d, &FIRST_MESSAGE[3..]));
         assert_eq!(d.frames.len(), 1);
         pop_first(&mut d);
         assert!(!d.has_pending());
@@ -373,20 +365,14 @@ mod tests {
     #[test]
     fn test_invalid_version_errors() {
         let mut d = MessageDeframer::new();
-        assert_len(
-            INVALID_VERSION_MESSAGE.len(),
-            input_bytes(&mut d, INVALID_VERSION_MESSAGE),
-        );
+        assert_len(INVALID_VERSION_MESSAGE.len(), input_bytes(&mut d, INVALID_VERSION_MESSAGE));
         assert!(d.desynced);
     }
 
     #[test]
     fn test_invalid_length_errors() {
         let mut d = MessageDeframer::new();
-        assert_len(
-            INVALID_LENGTH_MESSAGE.len(),
-            input_bytes(&mut d, INVALID_LENGTH_MESSAGE),
-        );
+        assert_len(INVALID_LENGTH_MESSAGE.len(), input_bytes(&mut d, INVALID_LENGTH_MESSAGE));
         assert!(d.desynced);
     }
 
@@ -407,10 +393,7 @@ mod tests {
     #[test]
     fn test_invalid_empty_errors() {
         let mut d = MessageDeframer::new();
-        assert_len(
-            INVALID_EMPTY_MESSAGE.len(),
-            input_bytes(&mut d, INVALID_EMPTY_MESSAGE),
-        );
+        assert_len(INVALID_EMPTY_MESSAGE.len(), input_bytes(&mut d, INVALID_EMPTY_MESSAGE));
         assert!(d.desynced);
     }
 }

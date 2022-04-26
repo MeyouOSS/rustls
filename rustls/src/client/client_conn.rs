@@ -153,10 +153,7 @@ impl ClientConfig {
     ///
     /// For more information, see the [`ConfigBuilder`] documentation.
     pub fn builder() -> ConfigBuilder<Self, WantsCipherSuites> {
-        ConfigBuilder {
-            state: WantsCipherSuites(()),
-            side: PhantomData::default(),
-        }
+        ConfigBuilder { state: WantsCipherSuites(()), side: PhantomData::default() }
     }
 
     #[doc(hidden)]
@@ -164,11 +161,7 @@ impl ClientConfig {
     /// versions *and* at least one ciphersuite for this version is
     /// also configured.
     pub fn supports_version(&self, v: ProtocolVersion) -> bool {
-        self.versions.contains(v)
-            && self
-                .cipher_suites
-                .iter()
-                .any(|cs| cs.version().version == v)
+        self.versions.contains(v) && self.cipher_suites.iter().any(|cs| cs.version().version == v)
     }
 
     /// Access configuration options whose use is dangerous and requires
@@ -179,10 +172,7 @@ impl ClientConfig {
     }
 
     pub(super) fn find_cipher_suite(&self, suite: CipherSuite) -> Option<SupportedCipherSuite> {
-        self.cipher_suites
-            .iter()
-            .copied()
-            .find(|&scs| scs.suite() == suite)
+        self.cipher_suites.iter().copied().find(|&scs| scs.suite() == suite)
     }
 }
 
@@ -308,10 +298,7 @@ pub(super) struct EarlyData {
 
 impl EarlyData {
     fn new() -> Self {
-        Self {
-            left: 0,
-            state: EarlyDataState::Disabled,
-        }
+        Self { left: 0, state: EarlyDataState::Disabled }
     }
 
     pub(super) fn is_enabled(&self) -> bool {
@@ -319,10 +306,7 @@ impl EarlyData {
     }
 
     fn is_accepted(&self) -> bool {
-        matches!(
-            self.state,
-            EarlyDataState::Accepted | EarlyDataState::AcceptedFinished
-        )
+        matches!(self.state, EarlyDataState::Accepted | EarlyDataState::AcceptedFinished)
     }
 
     pub(super) fn enable(&mut self, max_data: usize) {
@@ -387,11 +371,7 @@ impl<'a> WriteEarlyData<'a> {
     /// How many bytes you may send.  Writes will become short
     /// once this reaches zero.
     pub fn bytes_left(&self) -> usize {
-        self.sess
-            .inner
-            .data
-            .early_data
-            .bytes_left()
+        self.sess.inner.data.early_data.bytes_left()
     }
 }
 
@@ -412,8 +392,7 @@ pub struct ClientConnection {
 
 impl fmt::Debug for ClientConnection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("ClientConnection")
-            .finish()
+        f.debug_struct("ClientConnection").finish()
     }
 }
 
@@ -435,10 +414,7 @@ impl ClientConnection {
         common_state.protocol = proto;
         let mut data = ClientConnectionData::new();
 
-        let mut cx = hs::ClientContext {
-            common: &mut common_state,
-            data: &mut data,
-        };
+        let mut cx = hs::ClientContext { common: &mut common_state, data: &mut data };
 
         let state = hs::start_handshake(name, extra_exts, config, &mut cx)?;
         let inner = ConnectionCommon::new(state, data, common_state);
@@ -486,11 +462,7 @@ impl ClientConnection {
             .data
             .early_data
             .check_write(data.len())
-            .map(|sz| {
-                self.inner
-                    .common_state
-                    .send_early_plaintext(&data[..sz])
-            })
+            .map(|sz| self.inner.common_state.send_early_plaintext(&data[..sz]))
     }
 }
 
@@ -535,10 +507,7 @@ pub struct ClientConnectionData {
 
 impl ClientConnectionData {
     fn new() -> Self {
-        Self {
-            early_data: EarlyData::new(),
-            resumption_ciphersuite: None,
-        }
+        Self { early_data: EarlyData::new(), resumption_ciphersuite: None }
     }
 }
 
@@ -547,25 +516,13 @@ impl crate::conn::SideData for ClientConnectionData {}
 #[cfg(feature = "quic")]
 impl quic::QuicExt for ClientConnection {
     fn quic_transport_parameters(&self) -> Option<&[u8]> {
-        self.inner
-            .common_state
-            .quic
-            .params
-            .as_ref()
-            .map(|v| v.as_ref())
+        self.inner.common_state.quic.params.as_ref().map(|v| v.as_ref())
     }
 
     fn zero_rtt_keys(&self) -> Option<quic::DirectionalKeys> {
         Some(quic::DirectionalKeys::new(
-            self.inner
-                .data
-                .resumption_ciphersuite
-                .and_then(|suite| suite.tls13())?,
-            self.inner
-                .common_state
-                .quic
-                .early_secret
-                .as_ref()?,
+            self.inner.data.resumption_ciphersuite.and_then(|suite| suite.tls13())?,
+            self.inner.common_state.quic.early_secret.as_ref()?,
         ))
     }
 
@@ -595,9 +552,7 @@ pub trait ClientQuicExt {
         params: Vec<u8>,
     ) -> Result<ClientConnection, Error> {
         if !config.supports_version(ProtocolVersion::TLSv1_3) {
-            return Err(Error::General(
-                "TLS 1.3 support is required for QUIC".into(),
-            ));
+            return Err(Error::General("TLS 1.3 support is required for QUIC".into()));
         }
 
         let ext = match quic_version {

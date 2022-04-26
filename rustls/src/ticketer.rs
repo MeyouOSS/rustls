@@ -17,9 +17,7 @@ pub struct TimeBase(time::Duration);
 impl TimeBase {
     #[inline]
     pub fn now() -> Result<Self, time::SystemTimeError> {
-        Ok(Self(
-            time::SystemTime::now().duration_since(time::UNIX_EPOCH)?,
-        ))
+        Ok(Self(time::SystemTime::now().duration_since(time::UNIX_EPOCH)?))
     }
 
     #[inline]
@@ -47,11 +45,7 @@ impl AeadTicketer {
         let alg = &aead::CHACHA20_POLY1305;
         let key = aead::UnboundKey::new(alg, &key).unwrap();
 
-        Ok(Self {
-            alg,
-            key: aead::LessSafeKey::new(key),
-            lifetime: 60 * 60 * 12,
-        })
+        Ok(Self { alg, key: aead::LessSafeKey::new(key), lifetime: 60 * 60 * 12 })
     }
 }
 
@@ -95,11 +89,7 @@ impl ProducesTickets for AeadTicketer {
 
         let mut out = Vec::from(ciphertext);
 
-        let plain_len = self
-            .key
-            .open_in_place(nonce, aead::Aad::empty(), &mut out)
-            .ok()?
-            .len();
+        let plain_len = self.key.open_in_place(nonce, aead::Aad::empty(), &mut out).ok()?.len();
         out.truncate(plain_len);
 
         Some(out)
@@ -247,12 +237,7 @@ impl ProducesTickets for TicketSwitcher {
         state
             .current
             .decrypt(ciphertext)
-            .or_else(|| {
-                state
-                    .previous
-                    .as_ref()
-                    .and_then(|previous| previous.decrypt(ciphertext))
-            })
+            .or_else(|| state.previous.as_ref().and_then(|previous| previous.decrypt(ciphertext)))
     }
 }
 

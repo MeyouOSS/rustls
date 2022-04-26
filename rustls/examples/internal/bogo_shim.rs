@@ -287,9 +287,7 @@ impl rustls::client::ResolvesClientCert for FixedSignatureSchemeClientCertResolv
         if !sigschemes.contains(&self.scheme) {
             quit(":NO_COMMON_SIGNATURE_ALGORITHMS:");
         }
-        let mut certkey = self
-            .resolver
-            .resolve(acceptable_issuers, sigschemes)?;
+        let mut certkey = self.resolver.resolve(acceptable_issuers, sigschemes)?;
         Arc::make_mut(&mut certkey).key = Arc::new(FixedSignatureSchemeSigningKey {
             key: certkey.key.clone(),
             scheme: self.scheme,
@@ -341,10 +339,7 @@ struct ServerCacheWithResumptionDelay {
 
 impl ServerCacheWithResumptionDelay {
     fn new(delay: u32) -> Arc<Self> {
-        Arc::new(Self {
-            delay,
-            storage: rustls::server::ServerSessionMemoryCache::new(32),
-        })
+        Arc::new(Self { delay, storage: rustls::server::ServerSessionMemoryCache::new(32) })
     }
 }
 
@@ -360,10 +355,7 @@ fn align_time() {
     use std::{thread, time};
 
     fn sample() -> u64 {
-        time::SystemTime::now()
-            .duration_since(time::SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
+        time::SystemTime::now().duration_since(time::SystemTime::UNIX_EPOCH).unwrap().as_secs()
     }
 
     let start_secs = sample();
@@ -377,8 +369,7 @@ impl rustls::server::StoresServerSessions for ServerCacheWithResumptionDelay {
         let mut ssv = persist::ServerSessionValue::read_bytes(&value).unwrap();
         ssv.creation_time_sec -= self.delay as u64;
 
-        self.storage
-            .put(key, ssv.get_encoding())
+        self.storage.put(key, ssv.get_encoding())
     }
 
     fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
@@ -397,9 +388,7 @@ impl rustls::server::StoresServerSessions for ServerCacheWithResumptionDelay {
 fn make_server_cfg(opts: &Options) -> Arc<rustls::ServerConfig> {
     let client_auth =
         if opts.verify_peer || opts.offer_no_client_cas || opts.require_any_client_cert {
-            Arc::new(DummyClientAuth {
-                mandatory: opts.require_any_client_cert,
-            })
+            Arc::new(DummyClientAuth { mandatory: opts.require_any_client_cert })
         } else {
             rustls::server::NoClientAuth::new()
         };
@@ -408,10 +397,7 @@ fn make_server_cfg(opts: &Options) -> Arc<rustls::ServerConfig> {
     let key = load_key(&opts.key_file);
 
     let kx_groups = if let Some(curves) = &opts.curves {
-        curves
-            .iter()
-            .map(|curveid| lookup_kx_group(*curveid))
-            .collect()
+        curves.iter().map(|curveid| lookup_kx_group(*curveid)).collect()
     } else {
         rustls::ALL_KX_GROUPS.to_vec()
     };
@@ -448,11 +434,8 @@ fn make_server_cfg(opts: &Options) -> Arc<rustls::ServerConfig> {
     }
 
     if !opts.protocols.is_empty() {
-        cfg.alpn_protocols = opts
-            .protocols
-            .iter()
-            .map(|proto| proto.as_bytes().to_vec())
-            .collect::<Vec<_>>();
+        cfg.alpn_protocols =
+            opts.protocols.iter().map(|proto| proto.as_bytes().to_vec()).collect::<Vec<_>>();
     }
 
     if opts.enable_early_data {
@@ -512,10 +495,7 @@ impl rustls::client::StoresClientSessions for ClientCacheWithoutKxHints {
 
 fn make_client_cfg(opts: &Options) -> Arc<rustls::ClientConfig> {
     let kx_groups = if let Some(curves) = &opts.curves {
-        curves
-            .iter()
-            .map(|curveid| lookup_kx_group(*curveid))
-            .collect()
+        curves.iter().map(|curveid| lookup_kx_group(*curveid)).collect()
     } else {
         rustls::ALL_KX_GROUPS.to_vec()
     };
@@ -525,9 +505,7 @@ fn make_client_cfg(opts: &Options) -> Arc<rustls::ClientConfig> {
         .with_kx_groups(&kx_groups)
         .with_protocol_versions(&opts.supported_versions())
         .expect("inconsistent settings")
-        .with_custom_certificate_verifier(Arc::new(DummyServerAuth {
-            send_sct: opts.send_sct,
-        }));
+        .with_custom_certificate_verifier(Arc::new(DummyServerAuth { send_sct: opts.send_sct }));
 
     let mut cfg = if !opts.cert_file.is_empty() && !opts.key_file.is_empty() {
         let cert = load_cert(&opts.cert_file);
@@ -551,11 +529,7 @@ fn make_client_cfg(opts: &Options) -> Arc<rustls::ClientConfig> {
     cfg.max_fragment_size = opts.max_fragment;
 
     if !opts.protocols.is_empty() {
-        cfg.alpn_protocols = opts
-            .protocols
-            .iter()
-            .map(|proto| proto.as_bytes().to_vec())
-            .collect();
+        cfg.alpn_protocols = opts.protocols.iter().map(|proto| proto.as_bytes().to_vec()).collect();
     }
 
     if opts.enable_early_data {
@@ -662,9 +636,7 @@ fn exec(opts: &Options, mut sess: Connection, count: usize) {
                 .expect("0rtt not available")
                 .write(b"hello")
                 .expect("0rtt write failed");
-            sess.writer()
-                .write_all(&b"hello"[len..])
-                .unwrap();
+            sess.writer().write_all(&b"hello"[len..]).unwrap();
             sent_message = true;
         } else if !opts.only_write_one_byte_after_handshake {
             let _ = sess.writer().write_all(b"hello");
@@ -702,9 +674,7 @@ fn exec(opts: &Options, mut sess: Connection, count: usize) {
         if opts.server && opts.enable_early_data {
             if let Some(ref mut ed) = server(&mut sess).early_data() {
                 let mut data = Vec::new();
-                let data_len = ed
-                    .read_to_end(&mut data)
-                    .expect("cannot read early_data");
+                let data_len = ed.read_to_end(&mut data).expect("cannot read early_data");
 
                 for b in data.iter_mut() {
                     *b ^= 0xff;
@@ -721,21 +691,15 @@ fn exec(opts: &Options, mut sess: Connection, count: usize) {
             export.resize(opts.export_keying_material, 0u8);
             sess.export_keying_material(
                 &mut export,
-                opts.export_keying_material_label
-                    .as_bytes(),
+                opts.export_keying_material_label.as_bytes(),
                 if opts.export_keying_material_context_used {
-                    Some(
-                        opts.export_keying_material_context
-                            .as_bytes(),
-                    )
+                    Some(opts.export_keying_material_context.as_bytes())
                 } else {
                     None
                 },
             )
             .unwrap();
-            sess.writer()
-                .write_all(&export)
-                .unwrap();
+            sess.writer().write_all(&export).unwrap();
             sent_exporter = true;
         }
 
@@ -743,16 +707,13 @@ fn exec(opts: &Options, mut sess: Connection, count: usize) {
             println!("writing message and then only one byte of its tls frame");
             flush(&mut sess, &mut conn);
 
-            sess.writer()
-                .write_all(b"hello")
-                .unwrap();
+            sess.writer().write_all(b"hello").unwrap();
             sent_message = true;
 
             let mut one_byte = [0u8];
             let mut cursor = io::Cursor::new(&mut one_byte[..]);
             sess.write_tls(&mut cursor).unwrap();
-            conn.write_all(&one_byte)
-                .expect("IO error");
+            conn.write_all(&one_byte).expect("IO error");
 
             quench_writes = true;
         }
@@ -771,22 +732,14 @@ fn exec(opts: &Options, mut sess: Connection, count: usize) {
             }
         }
 
-        if !sess.is_handshaking()
-            && !opts
-                .expect_quic_transport_params
-                .is_empty()
-        {
-            let their_transport_params = sess
-                .quic_transport_parameters()
-                .expect("missing peer quic transport params");
+        if !sess.is_handshaking() && !opts.expect_quic_transport_params.is_empty() {
+            let their_transport_params =
+                sess.quic_transport_parameters().expect("missing peer quic transport params");
             assert_eq!(opts.expect_quic_transport_params, their_transport_params);
         }
 
         let mut buf = [0u8; 1024];
-        let len = match sess
-            .reader()
-            .read(&mut buf[..opts.read_size])
-        {
+        let len = match sess.reader().read(&mut buf[..opts.read_size]) {
             Ok(0) => {
                 if opts.check_close_notify {
                     println!("close notify ok");
@@ -820,9 +773,7 @@ fn exec(opts: &Options, mut sess: Connection, count: usize) {
             *b ^= 0xff;
         }
 
-        sess.writer()
-            .write_all(&buf[..len])
-            .unwrap();
+        sess.writer().write_all(&buf[..len]).unwrap();
     }
 }
 
@@ -1137,16 +1088,8 @@ fn main() {
 
     println!("opts {:?}", opts);
 
-    let mut server_cfg = if opts.server {
-        Some(make_server_cfg(&opts))
-    } else {
-        None
-    };
-    let client_cfg = if !opts.server {
-        Some(make_client_cfg(&opts))
-    } else {
-        None
-    };
+    let mut server_cfg = if opts.server { Some(make_server_cfg(&opts)) } else { None };
+    let client_cfg = if !opts.server { Some(make_client_cfg(&opts)) } else { None };
 
     fn make_session(
         opts: &Options,
@@ -1167,11 +1110,7 @@ fn main() {
             };
             s.into()
         } else {
-            let server_name = opts
-                .host_name
-                .as_str()
-                .try_into()
-                .unwrap();
+            let server_name = opts.host_name.as_str().try_into().unwrap();
             let ccfg = Arc::clone(ccfg.as_ref().unwrap());
             let c = if opts.quic_transport_params.is_empty() {
                 rustls::ClientConnection::new(ccfg, server_name)

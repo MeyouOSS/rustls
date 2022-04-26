@@ -171,11 +171,7 @@ impl Tls12CipherSuite {
     /// offered `SupportedSignatureSchemes`.  If we return an empty
     /// set, the handshake terminates.
     pub fn resolve_sig_schemes(&self, offered: &[SignatureScheme]) -> Vec<SignatureScheme> {
-        self.sign
-            .iter()
-            .filter(|pref| offered.contains(pref))
-            .cloned()
-            .collect()
+        self.sign.iter().filter(|pref| offered.contains(pref)).cloned().collect()
     }
 
     /// Which hash function to use with this suite.
@@ -223,11 +219,7 @@ impl ConnectionSecrets {
         randoms: ConnectionRandoms,
         suite: &'static Tls12CipherSuite,
     ) -> Result<Self, Error> {
-        let mut ret = Self {
-            randoms,
-            suite,
-            master_secret: [0u8; 48],
-        };
+        let mut ret = Self { randoms, suite, master_secret: [0u8; 48] };
 
         let (label, seed) = match ems_seed {
             Some(seed) => ("extended master secret", Seed::Ems(seed)),
@@ -256,13 +248,8 @@ impl ConnectionSecrets {
         suite: &'static Tls12CipherSuite,
         master_secret: &[u8],
     ) -> Self {
-        let mut ret = Self {
-            randoms,
-            suite,
-            master_secret: [0u8; 48],
-        };
-        ret.master_secret
-            .copy_from_slice(master_secret);
+        let mut ret = Self { randoms, suite, master_secret: [0u8; 48] };
+        ret.master_secret.copy_from_slice(master_secret);
         ret
     }
 
@@ -293,27 +280,13 @@ impl ConnectionSecrets {
         let (server_write_iv, extra) = key_block.split_at(suite.fixed_iv_len);
 
         let (write_key, write_iv, read_key, read_iv) = match side {
-            Side::Client => (
-                client_write_key,
-                client_write_iv,
-                server_write_key,
-                server_write_iv,
-            ),
-            Side::Server => (
-                server_write_key,
-                server_write_iv,
-                client_write_key,
-                client_write_iv,
-            ),
+            Side::Client => (client_write_key, client_write_iv, server_write_key, server_write_iv),
+            Side::Server => (server_write_key, server_write_iv, client_write_key, client_write_iv),
         };
 
         (
-            suite
-                .aead_alg
-                .decrypter(read_key, read_iv),
-            suite
-                .aead_alg
-                .encrypter(write_key, write_iv, extra),
+            suite.aead_alg.decrypter(read_key, read_iv),
+            suite.aead_alg.encrypter(write_key, write_iv, extra),
         )
     }
 
@@ -388,13 +361,7 @@ impl ConnectionSecrets {
             randoms.extend_from_slice(context);
         }
 
-        prf::prf(
-            output,
-            self.suite.hmac_algorithm,
-            &self.master_secret,
-            label,
-            &randoms,
-        )
+        prf::prf(output, self.suite.hmac_algorithm, &self.master_secret, label, &randoms)
     }
 }
 

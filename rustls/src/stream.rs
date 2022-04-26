@@ -121,10 +121,7 @@ where
     fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> Result<usize> {
         self.complete_prior_io()?;
 
-        let len = self
-            .conn
-            .writer()
-            .write_vectored(bufs)?;
+        let len = self.conn.writer().write_vectored(bufs)?;
 
         // Try to write the underlying transport here, but don't let
         // any errors mask the fact we've consumed `len` bytes.
@@ -192,10 +189,7 @@ where
     S: SideData,
 {
     fn as_stream(&'a mut self) -> Stream<'a, C, T> {
-        Stream {
-            conn: &mut self.conn,
-            sock: &mut self.sock,
-        }
+        Stream { conn: &mut self.conn, sock: &mut self.sock }
     }
 }
 

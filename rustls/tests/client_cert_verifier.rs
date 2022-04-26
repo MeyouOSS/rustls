@@ -218,10 +218,7 @@ fn client_verifier_fails_properly() {
             let mut client =
                 ClientConnection::new(Arc::new(client_config), dns_name("localhost")).unwrap();
             let err = do_handshake_until_error(&mut client, &mut server);
-            assert_eq!(
-                err,
-                Err(ErrorFromPeer::Server(Error::General("test err".into())))
-            );
+            assert_eq!(err, Err(ErrorFromPeer::Server(Error::General("test err".into()))));
         }
     }
 }
