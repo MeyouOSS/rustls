@@ -179,6 +179,41 @@ pub trait ServerCertVerifier: Send + Sync {
     }
 }
 
+#[cfg(feature = "dangerous_configuration")]
+pub(crate) struct NoServerCertVerifier;
+#[cfg(feature = "dangerous_configuration")]
+impl ServerCertVerifier for NoServerCertVerifier {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &rustls::Certificate,
+        _intermediates: &[rustls::Certificate],
+        _server_name: &ServerName,
+        _scts: &mut dyn Iterator<Item = &[u8]>,
+        _ocsp_response: &[u8],
+        _now: std::time::SystemTime,
+    ) -> Result<ServerCertVerified, TLSError> {
+        Ok(ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        _message: &[u8],
+        _cert: &rustls::Certificate,
+        _dss: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, TLSError> {
+        Ok(HandshakeSignatureValid::assertion())
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        _message: &[u8],
+        _cert: &rustls::Certificate,
+        _dss: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, TLSError> {
+        Ok(HandshakeSignatureValid::assertion())
+    }
+}
+
 /// A type which encapsuates a string that is a syntactically valid DNS name.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DnsName(pub(crate) webpki::DnsName);

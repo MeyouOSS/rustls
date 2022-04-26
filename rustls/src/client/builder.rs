@@ -47,6 +47,11 @@ impl ConfigBuilder<ClientConfig, WantsVerifier> {
             side: PhantomData::default(),
         }
     }
+
+    #[cfg(feature = "dangerous_configuration")]
+    pub fn with_no_certificate_verifier(self) -> ConfigBuilder<ClientConfig, WantsClientCert> {
+        self.with_custom_certificate_verifier(verify::NoServerCertVerifier)
+    }
 }
 
 /// A config builder state where the caller needs to supply a certificate transparency policy or
