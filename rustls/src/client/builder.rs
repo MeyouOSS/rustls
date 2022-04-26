@@ -50,7 +50,7 @@ impl ConfigBuilder<ClientConfig, WantsVerifier> {
 
     #[cfg(feature = "dangerous_configuration")]
     pub fn with_no_certificate_verifier(self) -> ConfigBuilder<ClientConfig, WantsClientCert> {
-        self.with_custom_certificate_verifier(verify::NoServerCertVerifier)
+        self.with_custom_certificate_verifier(Arc::new(verify::NoServerCertVerifier))
     }
 }
 

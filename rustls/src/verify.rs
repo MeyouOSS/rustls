@@ -185,31 +185,31 @@ pub(crate) struct NoServerCertVerifier;
 impl ServerCertVerifier for NoServerCertVerifier {
     fn verify_server_cert(
         &self,
-        _end_entity: &rustls::Certificate,
-        _intermediates: &[rustls::Certificate],
+        _end_entity: &Certificate,
+        _intermediates: &[Certificate],
         _server_name: &ServerName,
         _scts: &mut dyn Iterator<Item = &[u8]>,
         _ocsp_response: &[u8],
         _now: std::time::SystemTime,
-    ) -> Result<ServerCertVerified, TLSError> {
+    ) -> Result<ServerCertVerified, crate::TLSError> {
         Ok(ServerCertVerified::assertion())
     }
 
     fn verify_tls12_signature(
         &self,
         _message: &[u8],
-        _cert: &rustls::Certificate,
+        _cert: &Certificate,
         _dss: &DigitallySignedStruct,
-    ) -> Result<HandshakeSignatureValid, TLSError> {
+    ) -> Result<HandshakeSignatureValid, crate::TLSError> {
         Ok(HandshakeSignatureValid::assertion())
     }
 
     fn verify_tls13_signature(
         &self,
         _message: &[u8],
-        _cert: &rustls::Certificate,
+        _cert: &Certificate,
         _dss: &DigitallySignedStruct,
-    ) -> Result<HandshakeSignatureValid, TLSError> {
+    ) -> Result<HandshakeSignatureValid, crate::TLSError> {
         Ok(HandshakeSignatureValid::assertion())
     }
 }
